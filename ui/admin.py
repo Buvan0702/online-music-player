@@ -1,19 +1,20 @@
-import tkinter as tk
-from tkinter import ttk
+import customtkinter as ctk
 
-# ---------------- Main Application Window ----------------
-root = tk.Tk()
+# ---------------- Initialize App ----------------
+ctk.set_appearance_mode("dark")  # Enable dark mode
+ctk.set_default_color_theme("blue")  # Set color theme
+
+root = ctk.CTk()
 root.title("Online Music System - Admin Dashboard")
-root.geometry("800x500")  # Fixed window size
-root.resizable(False, False)  # Prevent resizing
-root.configure(bg="#1a202c")  # Dark background
+root.geometry("800x500")
+root.resizable(False, False)
 
 # ---------------- Sidebar Navigation ----------------
-sidebar = tk.Frame(root, bg="#2d3748", width=200, height=500)
+sidebar = ctk.CTkFrame(root, width=200, height=500, fg_color="#2d3748")
 sidebar.pack(side="left", fill="y")
 
 # Sidebar Title
-title_label = tk.Label(sidebar, text="🛠 Admin Dashboard", font=("Arial", 14, "bold"), bg="#2d3748", fg="white")
+title_label = ctk.CTkLabel(sidebar, text="🛠 Admin Dashboard", font=("Arial", 14, "bold"), text_color="white")
 title_label.pack(pady=15)
 
 # Sidebar Buttons
@@ -27,34 +28,34 @@ menu_items = [
 ]
 
 for text, color in menu_items:
-    btn = tk.Button(sidebar, text=text, font=("Arial", 11), fg="white", bg="#2d3748", relief="flat", anchor="w",
-                    padx=10, activebackground="#4a5568", activeforeground="white", bd=0)
+    btn = ctk.CTkButton(sidebar, text=text, font=("Arial", 11), fg_color="#2d3748", hover_color="#4a5568",
+                        text_color="white", corner_radius=0)
     btn.pack(fill="x", pady=3)
 
 # ---------------- Main Content ----------------
-main_content = tk.Frame(root, bg="#1a202c", width=600, height=500)
+main_content = ctk.CTkFrame(root, fg_color="#1a202c", width=600, height=500)
 main_content.pack(side="right", fill="both", expand=True, padx=20, pady=20)
 
 # Header Section
-header_frame = tk.Frame(main_content, bg="#1a202c")
+header_frame = ctk.CTkFrame(main_content, fg_color="#1a202c")
 header_frame.pack(fill="x", pady=5)
 
-header_label = tk.Label(header_frame, text="📊 Admin Dashboard", font=("Arial", 16, "bold"), bg="#1a202c", fg="white")
+header_label = ctk.CTkLabel(header_frame, text="📊 Admin Dashboard", font=("Arial", 16, "bold"), text_color="white")
 header_label.pack(side="left")
 
-user_label = tk.Label(header_frame, text="Hello, Admin!", font=("Arial", 11), bg="#1a202c", fg="gray")
+user_label = ctk.CTkLabel(header_frame, text="Hello, Admin!", font=("Arial", 11), text_color="gray")
 user_label.pack(side="right")
 
 # ---------------- Quick Overview ----------------
-overview_section = tk.Frame(main_content, bg="#1a202c")
+overview_section = ctk.CTkFrame(main_content, fg_color="#1a202c")
 overview_section.pack(fill="x", pady=15)
 
-overview_title = tk.Label(overview_section, text="📌 Quick Overview", font=("Arial", 14, "bold"),
-                          bg="#1a202c", fg="#9f7aea")
+overview_title = ctk.CTkLabel(overview_section, text="📌 Quick Overview", font=("Arial", 14, "bold"),
+                              text_color="#9f7aea")
 overview_title.pack(anchor="w", pady=5)
 
 # Stats Grid
-stats_frame = tk.Frame(overview_section, bg="#1a202c")
+stats_frame = ctk.CTkFrame(overview_section, fg_color="#1a202c")
 stats_frame.pack(fill="x")
 
 stats = [
@@ -65,24 +66,24 @@ stats = [
 ]
 
 for name, value, color in stats:
-    stat_card = tk.Frame(stats_frame, bg="#2d3748", width=150, height=80, relief="flat", bd=2)
-    stat_card.pack(side="left", padx=10, pady=5)
+    stat_card = ctk.CTkFrame(stats_frame, fg_color="#2d3748", width=160, height=80, corner_radius=10)
+    stat_card.pack(side="left", padx=10, pady=5, expand=True)
 
-    stat_icon = tk.Label(stat_card, text=name, font=("Arial", 10, "bold"), fg="white", bg="#2d3748")
+    stat_icon = ctk.CTkLabel(stat_card, text=name, font=("Arial", 10, "bold"), text_color="white")
     stat_icon.pack(pady=5)
 
-    stat_value = tk.Label(stat_card, text=value, font=("Arial", 14, "bold"), fg=color, bg="#2d3748")
+    stat_value = ctk.CTkLabel(stat_card, text=value, font=("Arial", 14, "bold"), text_color=color)
     stat_value.pack()
 
 # ---------------- Admin Actions ----------------
-actions_section = tk.Frame(main_content, bg="#1a202c")
+actions_section = ctk.CTkFrame(main_content, fg_color="#1a202c")
 actions_section.pack(fill="x", pady=15)
 
-actions_title = tk.Label(actions_section, text="⚙️ Manage", font=("Arial", 14, "bold"),
-                         bg="#1a202c", fg="#9f7aea")
+actions_title = ctk.CTkLabel(actions_section, text="⚙️ Manage", font=("Arial", 14, "bold"),
+                             text_color="#9f7aea")
 actions_title.pack(anchor="w", pady=5)
 
-actions_frame = tk.Frame(actions_section, bg="#1a202c")
+actions_frame = ctk.CTkFrame(actions_section, fg_color="#1a202c")
 actions_frame.pack(fill="x")
 
 # Action Buttons
@@ -93,9 +94,9 @@ buttons = [
 ]
 
 for text, color in buttons:
-    action_btn = tk.Button(actions_frame, text=text, font=("Arial", 12, "bold"), bg=color, fg="white",
-                           relief="flat", cursor="hand2", height=2, activebackground="#6b46c1")
-    action_btn.pack(side="left", padx=10, pady=5)
+    action_btn = ctk.CTkButton(actions_frame, text=text, font=("Arial", 12, "bold"), fg_color=color,
+                               hover_color="#6b46c1", text_color="white", height=40, corner_radius=10)
+    action_btn.pack(side="left", padx=10, pady=5, expand=True)
 
 # ---------------- Run Application ----------------
 root.mainloop()

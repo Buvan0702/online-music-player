@@ -1,19 +1,20 @@
-import tkinter as tk
-from tkinter import ttk
+import customtkinter as ctk
 
-# ---------------- Main Application Window ----------------
-root = tk.Tk()
+# ---------------- Initialize App ----------------
+ctk.set_appearance_mode("dark")  # Enable dark mode
+ctk.set_default_color_theme("blue")  # Set color theme
+
+root = ctk.CTk()
 root.title("Online Music System - Recommended Songs")
-root.geometry("800x500")  # Fixed window size
-root.resizable(False, False)  # Prevent resizing
-root.configure(bg="#1a202c")  # Dark background
+root.geometry("800x500")
+root.resizable(False, False)
 
 # ---------------- Sidebar Navigation ----------------
-sidebar = tk.Frame(root, bg="#2d3748", width=200, height=500)
+sidebar = ctk.CTkFrame(root, width=200, height=500, fg_color="#2d3748")
 sidebar.pack(side="left", fill="y")
 
 # Sidebar Title
-title_label = tk.Label(sidebar, text="🎵 Online Music System", font=("Arial", 14, "bold"), bg="#2d3748", fg="white")
+title_label = ctk.CTkLabel(sidebar, text="🎵 Online Music System", font=("Arial", 14, "bold"), text_color="white")
 title_label.pack(pady=15)
 
 # Sidebar Buttons
@@ -27,54 +28,51 @@ menu_items = [
 ]
 
 for text, color in menu_items:
-    btn = tk.Button(sidebar, text=text, font=("Arial", 11), fg="white", bg="#2d3748", relief="flat", anchor="w",
-                    padx=10, activebackground="#4a5568", activeforeground="white", bd=0)
+    btn = ctk.CTkButton(sidebar, text=text, font=("Arial", 11), fg_color="#2d3748", hover_color="#4a5568",
+                        text_color="white", corner_radius=0)
     btn.pack(fill="x", pady=3)
 
 # ---------------- Music Player Controls ----------------
-player_frame = tk.Frame(sidebar, bg="#2d3748")
+player_frame = ctk.CTkFrame(sidebar, fg_color="#2d3748")
 player_frame.pack(side="bottom", pady=10)
 
-prev_btn = tk.Button(player_frame, text="⏮️", font=("Arial", 14), fg="white", bg="#2d3748", relief="flat",
-                      activebackground="#4a5568")
+prev_btn = ctk.CTkButton(player_frame, text="⏮️", font=("Arial", 14), fg_color="#2d3748", hover_color="#4a5568", width=40)
 prev_btn.pack(side="left", padx=5)
 
-play_btn = tk.Button(player_frame, text="▶️", font=("Arial", 14), fg="white", bg="#2d3748", relief="flat",
-                      activebackground="#4a5568")
+play_btn = ctk.CTkButton(player_frame, text="▶️", font=("Arial", 14), fg_color="#2d3748", hover_color="#4a5568", width=40)
 play_btn.pack(side="left", padx=5)
 
-next_btn = tk.Button(player_frame, text="⏭️", font=("Arial", 14), fg="white", bg="#2d3748", relief="flat",
-                      activebackground="#4a5568")
+next_btn = ctk.CTkButton(player_frame, text="⏭️", font=("Arial", 14), fg_color="#2d3748", hover_color="#4a5568", width=40)
 next_btn.pack(side="left", padx=5)
 
 # ---------------- Main Content ----------------
-main_content = tk.Frame(root, bg="#1a202c", width=600, height=500)
+main_content = ctk.CTkFrame(root, fg_color="#1a202c", width=600, height=500)
 main_content.pack(side="right", fill="both", expand=True, padx=20, pady=20)
 
 # Header Section
-header_frame = tk.Frame(main_content, bg="#1a202c")
+header_frame = ctk.CTkFrame(main_content, fg_color="#1a202c")
 header_frame.pack(fill="x", pady=5)
 
-header_label = tk.Label(header_frame, text="🎧 Recommended Songs", font=("Arial", 16, "bold"), bg="#1a202c", fg="white")
+header_label = ctk.CTkLabel(header_frame, text="🎧 Recommended Songs", font=("Arial", 16, "bold"), text_color="white")
 header_label.pack(side="left")
 
-user_label = tk.Label(header_frame, text="Hello, User!", font=("Arial", 11), bg="#1a202c", fg="gray")
+user_label = ctk.CTkLabel(header_frame, text="Hello, User!", font=("Arial", 11), text_color="gray")
 user_label.pack(side="right")
 
 # ---------------- Recommended Songs Section ----------------
-recommended_section = tk.Frame(main_content, bg="#1a202c")
+recommended_section = ctk.CTkFrame(main_content, fg_color="#1a202c")
 recommended_section.pack(fill="x", pady=15)
 
-recommended_title = tk.Label(recommended_section, text="🎵 Songs You Might Like 🎶", font=("Arial", 14, "bold"),
-                             bg="#1a202c", fg="#9f7aea")
+recommended_title = ctk.CTkLabel(recommended_section, text="🎵 Songs You Might Like 🎶", font=("Arial", 14, "bold"),
+                                 text_color="#9f7aea")
 recommended_title.pack(pady=5)
 
-recommended_info = tk.Label(recommended_section, text="Discover music based on your taste.",
-                            font=("Arial", 10), bg="#1a202c", fg="gray")
+recommended_info = ctk.CTkLabel(recommended_section, text="Discover music based on your taste.",
+                                font=("Arial", 10), text_color="gray")
 recommended_info.pack()
 
 # Song List Frame
-song_frame = tk.Frame(recommended_section, bg="#1a202c")
+song_frame = ctk.CTkFrame(recommended_section, fg_color="#1a202c")
 song_frame.pack(pady=10)
 
 # Recommended Songs
@@ -86,13 +84,13 @@ songs = [
 ]
 
 for song in songs:
-    song_label = tk.Label(song_frame, text=song, font=("Arial", 11, "bold"), bg="#2d3748", fg="white",
-                          padx=10, pady=5, width=50, relief="flat", cursor="hand2")
+    song_label = ctk.CTkLabel(song_frame, text=song, font=("Arial", 11, "bold"), fg_color="#2d3748", text_color="white",
+                              width=250, height=30, corner_radius=10)
     song_label.pack(pady=3)
 
 # ---------------- Refresh Button ----------------
-refresh_button = tk.Button(recommended_section, text="🔄 Refresh", font=("Arial", 12, "bold"), bg="#9f7aea", fg="white",
-                           relief="flat", cursor="hand2", height=2, activebackground="#6b46c1")
+refresh_button = ctk.CTkButton(recommended_section, text="🔄 Refresh", font=("Arial", 12, "bold"), fg_color="#9f7aea",
+                               hover_color="#6b46c1", text_color="white", height=40, corner_radius=10)
 refresh_button.pack(pady=10)
 
 # ---------------- Run Application ----------------

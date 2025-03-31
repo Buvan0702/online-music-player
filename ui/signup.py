@@ -1,17 +1,85 @@
 import customtkinter as ctk
+from tkinter import messagebox
+import mysql.connector
+import hashlib
+import subprocess  # To open login.py
 
-# ---------------- Initialize CustomTkinter ----------------
-ctk.set_appearance_mode("dark")  # "Dark", "Light", "System"
-ctk.set_default_color_theme("blue")
+# ------------------- Database Connection -------------------
+def connect_db():
+    return mysql.connector.connect(
+        host="localhost",
+        user="root",  # Replace with your MySQL username
+        password="new_password",  # Replace with your MySQL password
+        database="online_music_system"  # Replace with your database name
+    )
 
-# ---------------- Main Application Window ----------------
-root = ctk.CTk()
-root.title("Online Music System - Sign Up")
-root.geometry("750x500")  
-root.resizable(False, False)  
+# ------------------- Password Hashing -------------------
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+# ------------------- Sign Up Function -------------------
+def signup_user():
+    first_name = first_name_entry.get()
+    last_name = last_name_entry.get()
+    email = email_entry.get()
+    password = password_entry.get()
+    confirm_password = confirm_password_entry.get()
+
+    # Check if any fields are empty
+    if not first_name or not last_name or not email or not password or not confirm_password:
+        messagebox.showwarning("Input Error", "All fields are required.")
+        return
+
+    # Check if passwords match
+    if password != confirm_password:
+        messagebox.showwarning("Password Error", "Passwords do not match.")
+        return
+
+    # Hash the password
+    hashed_password = hash_password(password)
+
+    try:
+        connection = connect_db()
+        cursor = connection.cursor()
+
+        # Insert the user data into the database
+        cursor.execute(
+            "INSERT INTO Users (first_name, last_name, email, password) VALUES (%s, %s, %s, %s)",
+            (first_name, last_name, email, hashed_password)
+        )
+
+        connection.commit()
+        messagebox.showinfo("Success", "User registered successfully!")
+        
+        # After successful registration, redirect to login page
+        open_login_page()
+
+    except mysql.connector.Error as err:
+        messagebox.showerror("Database Error", str(err))
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+# ------------------- Open Login Page -------------------
+def open_login_page():
+    try:
+        subprocess.Popen(["python", "login.py"])  # Open login.py after successful signup
+        root.quit()  # Close the current signup window
+    except Exception as e:
+        messagebox.showerror("Error", f"Unable to open login page: {e}")
+
+# ----------------- Setup -----------------
+ctk.set_appearance_mode("dark")  # Dark Mode
+ctk.set_default_color_theme("blue")  # Blue Theme
+
+app = ctk.CTk()
+app.title("Online Music System - Sign Up")
+app.geometry("750x500")  
+app.resizable(False, False)  
 
 # ---------------- Main Frame (Holds everything) ----------------
-main_frame = ctk.CTkFrame(root, fg_color="white", corner_radius=0)
+main_frame = ctk.CTkFrame(app, fg_color="white", corner_radius=0)
 main_frame.place(relx=0.5, rely=0.5, anchor="center")
 
 # ---------------- Left Side - Branding ----------------
@@ -42,12 +110,19 @@ def on_focus_in(event):
 def on_focus_out(event):
     event.widget.configure(border_color="#ddd")
 
-# --- Full Name Entry ---
-name_entry = ctk.CTkEntry(right_frame, placeholder_text="Full Name", font=("Arial", 12),
-                          fg_color="white", text_color="black", border_color="#ddd", width=300)
-name_entry.pack(pady=5)
-name_entry.bind("<FocusIn>", on_focus_in)
-name_entry.bind("<FocusOut>", on_focus_out)
+# --- First Name Entry ---
+first_name_entry = ctk.CTkEntry(right_frame, placeholder_text="First Name", font=("Arial", 12),
+                                fg_color="white", text_color="black", border_color="#ddd", width=300)
+first_name_entry.pack(pady=5)
+first_name_entry.bind("<FocusIn>", on_focus_in)
+first_name_entry.bind("<FocusOut>", on_focus_out)
+
+# --- Last Name Entry ---
+last_name_entry = ctk.CTkEntry(right_frame, placeholder_text="Last Name", font=("Arial", 12),
+                               fg_color="white", text_color="black", border_color="#ddd", width=300)
+last_name_entry.pack(pady=5)
+last_name_entry.bind("<FocusIn>", on_focus_in)
+last_name_entry.bind("<FocusOut>", on_focus_out)
 
 # --- Email Entry ---
 email_entry = ctk.CTkEntry(right_frame, placeholder_text="Email", font=("Arial", 12),
@@ -85,12 +160,12 @@ confirm_password_entry.bind("<FocusOut>", on_focus_out)
 
 # ---------------- Sign-Up Button ----------------
 signup_button = ctk.CTkButton(right_frame, text="Sign Up", font=("Arial", 12, "bold"),
-                              fg_color="#1a202c", text_color="white", corner_radius=5, height=40)
+                              fg_color="#1a202c", text_color="white", corner_radius=5, height=40, command=signup_user)
 signup_button.pack(fill="x", pady=(10, 10))
 
 # ---------------- Login Link ----------------
 login_label = ctk.CTkLabel(right_frame, text="Already have an account? Login here",
-                           font=("Arial", 10), text_color="black", cursor="hand2")
+                           font=("Arial", 10), text_color="black", cursor="hand2", command=open_login_page)
 login_label.pack(pady=5)
 
 # ---------------- Social Media Sign-Up ----------------
@@ -108,4 +183,4 @@ google_button = ctk.CTkButton(social_frame, text="Google", font=("Arial", 10, "b
 google_button.pack(side="right", padx=5)
 
 # ---------------- Run Application ----------------
-root.mainloop()
+app.mainloop()

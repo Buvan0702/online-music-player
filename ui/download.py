@@ -2,140 +2,144 @@ import customtkinter as ctk
 from tkinter import filedialog
 
 # ---------------- Initialize App ----------------
-ctk.set_appearance_mode("dark")  # Enable dark mode
-ctk.set_default_color_theme("blue")  # Set color theme
+ctk.set_appearance_mode("dark")  # Dark mode
+ctk.set_default_color_theme("blue")  # Default theme
 
 root = ctk.CTk()
 root.title("Online Music System - Download Songs")
-root.geometry("800x500")
+root.geometry("1000x600")  # Adjusted to match the image proportions
 root.resizable(False, False)
 
+# ---------------- Main Frame ----------------
+main_frame = ctk.CTkFrame(root, fg_color="#1E1E2E", corner_radius=15)
+main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
 # ---------------- Sidebar Navigation ----------------
-sidebar = ctk.CTkFrame(root, width=200, height=500, fg_color="#2d3748")
-sidebar.pack(side="left", fill="y")
+sidebar = ctk.CTkFrame(main_frame, width=250, height=580, fg_color="#111827", corner_radius=10)
+sidebar.pack(side="left", fill="y", padx=(10, 0), pady=10)
 
 # Sidebar Title
-title_label = ctk.CTkLabel(sidebar, text="🎵 Online Music System", font=("Arial", 14, "bold"), text_color="white")
-title_label.pack(pady=15)
+title_label = ctk.CTkLabel(sidebar, text="Online Music\nSystem", font=("Arial", 20, "bold"), text_color="white")
+title_label.pack(pady=(25, 30))
 
-# Sidebar Buttons
+# Sidebar Menu Items
 menu_items = [
-    ("🏠 Home", "#"),
-    ("🎵 Playlist", "#"),
-    ("⭐ Featured", "#"),
-    ("⬇️ Download Songs", "#9f7aea"),  # Highlighted purple color
-    ("🎧 Recommend Songs", "#"),
-    ("🚪 Logout", "#FF4C4C")  # Red for logout
+    ("🏠 Home", "#111827", "#A0A0A0"),
+    ("🔍 Search", "#111827", "#A0A0A0"),
+    ("🎵 Playlist", "#111827", "#A0A0A0"),
+    ("⬇️ Download", "#111827", "white"),  # Highlighted as active
+    ("🎧 Recommend Songs", "#111827", "#A0A0A0"),
+    ("🚪 Logout", "#111827", "#A0A0A0")
 ]
 
-for text, color in menu_items:
-    btn = ctk.CTkButton(sidebar, text=text, font=("Arial", 11), fg_color="#2d3748", hover_color="#4a5568",
-                        text_color="white", corner_radius=0)
-    btn.pack(fill="x", pady=3)
+for text, bg_color, text_color in menu_items:
+    btn = ctk.CTkButton(sidebar, text=text, font=("Arial", 14), 
+                      fg_color=bg_color, hover_color="#1E293B", text_color=text_color,
+                      anchor="w", corner_radius=0, height=40)
+    btn.pack(fill="x", pady=5, padx=10)
 
-# ---------------- Music Player Controls ----------------
-player_frame = ctk.CTkFrame(sidebar, fg_color="#2d3748")
-player_frame.pack(side="bottom", pady=10)
+# Music player controls at bottom of sidebar
+player_frame = ctk.CTkFrame(sidebar, fg_color="#111827", height=50)
+player_frame.pack(side="bottom", fill="x", pady=20, padx=10)
 
-prev_btn = ctk.CTkButton(player_frame, text="⏮️", font=("Arial", 14), fg_color="#2d3748", hover_color="#4a5568", width=40)
-prev_btn.pack(side="left", padx=5)
+# Control buttons
+prev_btn = ctk.CTkButton(player_frame, text="⏮️", font=("Arial", 18), 
+                         fg_color="#111827", hover_color="#1E293B", width=40, height=40)
+prev_btn.pack(side="left", padx=10)
 
-play_btn = ctk.CTkButton(player_frame, text="▶️", font=("Arial", 14), fg_color="#2d3748", hover_color="#4a5568", width=40)
-play_btn.pack(side="left", padx=5)
+play_btn = ctk.CTkButton(player_frame, text="▶️", font=("Arial", 18), 
+                         fg_color="#111827", hover_color="#1E293B", width=40, height=40)
+play_btn.pack(side="left", padx=10)
 
-next_btn = ctk.CTkButton(player_frame, text="⏭️", font=("Arial", 14), fg_color="#2d3748", hover_color="#4a5568", width=40)
-next_btn.pack(side="left", padx=5)
+next_btn = ctk.CTkButton(player_frame, text="⏭️", font=("Arial", 18), 
+                         fg_color="#111827", hover_color="#1E293B", width=40, height=40)
+next_btn.pack(side="left", padx=10)
 
 # ---------------- Main Content ----------------
-main_content = ctk.CTkFrame(root, fg_color="#1a202c", width=600, height=500)
-main_content.pack(side="right", fill="both", expand=True, padx=20, pady=20)
+content_frame = ctk.CTkFrame(main_frame, fg_color="#131B2E", corner_radius=10)
+content_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
 
-# Header Section
-header_frame = ctk.CTkFrame(main_content, fg_color="#1a202c")
-header_frame.pack(fill="x", pady=5)
+# Header with username
+header_frame = ctk.CTkFrame(content_frame, fg_color="#131B2E", height=40)
+header_frame.pack(fill="x", padx=20, pady=(20, 0))
 
-header_label = ctk.CTkLabel(header_frame, text="⬇️ Download Songs", font=("Arial", 16, "bold"), text_color="white")
-header_label.pack(side="left")
+# Left side: Download Songs
+download_label = ctk.CTkLabel(header_frame, text="Download Songs", font=("Arial", 24, "bold"), text_color="white")
+download_label.pack(side="left")
 
-user_label = ctk.CTkLabel(header_frame, text="Hello, User!", font=("Arial", 11), text_color="gray")
+# Right side: Username
+user_label = ctk.CTkLabel(header_frame, text="Hello, User!", font=("Arial", 14), text_color="#A0A0A0")
 user_label.pack(side="right")
 
-# ---------------- Song Selection Section ----------------
-download_section = ctk.CTkFrame(main_content, fg_color="#1a202c")
-download_section.pack(fill="x", pady=15)
+# ---------------- Download Your Favorite Songs ----------------
+favorite_songs_frame = ctk.CTkFrame(content_frame, fg_color="#131B2E")
+favorite_songs_frame.pack(fill="both", expand=True, padx=20, pady=(40, 0))
 
-download_title = ctk.CTkLabel(download_section, text="🎵 Download Your Favorite Songs", font=("Arial", 14, "bold"),
-                              text_color="#9f7aea")
-download_title.pack(pady=5)
+# Section title - centered
+title_label = ctk.CTkLabel(favorite_songs_frame, text="Download Your Favorite Songs 🎵", 
+                          font=("Arial", 24, "bold"), text_color="#B146EC")
+title_label.pack(pady=(0, 5))
 
-download_info = ctk.CTkLabel(download_section, text="Select a song to download or upload your own.",
-                             font=("Arial", 10), text_color="gray")
-download_info.pack()
+# Subtitle - centered
+subtitle_label = ctk.CTkLabel(favorite_songs_frame, text="Select a song to download or upload your own.", 
+                             font=("Arial", 14), text_color="#A0A0A0")
+subtitle_label.pack(pady=(0, 20))
 
-# Song List Frame
-song_frame = ctk.CTkFrame(download_section, fg_color="#1a202c")
-song_frame.pack(pady=10)
+# Function to track selected song
+selected_song = None
 
-# Function to Select a Song
-selected_song = None  # Variable to track selected song
-
-def select_song(song_label, song_name):
+def select_song(song_frame, song_name):
     global selected_song
-    for widget in song_frame.winfo_children():
-        widget.configure(fg_color="#2d3748")  # Reset all backgrounds
-    song_label.configure(fg_color="#4C4C6D")  # Highlight selected song
-    selected_song = song_name  # Store selected song
+    # Reset all song frames
+    for frame in song_frames:
+        frame.configure(fg_color="#1A1A2E")
+    # Highlight selected song
+    song_frame.configure(fg_color="#2A2A4E")
+    selected_song = song_name
 
-# Songs Available for Download
+# Songs list
 songs = [
-    "🎧 The Weeknd - Blinding Lights",
-    "🎶 Dua Lipa - Levitating",
-    "🎸 Imagine Dragons - Believer",
-    "🎵 Ed Sheeran - Shape of You"
+    ("🎧 The Weeknd - Blinding Lights", "1A1A2E"),
+    ("🎵 Dua Lipa - Levitating", "1A1A2E"),
+    ("🎸 Imagine Dragons - Believer", "1A1A2E"),
+    ("🎵 Ed Sheeran - Shape of You", "1A1A2E")
 ]
 
-for song in songs:
-    song_label = ctk.CTkLabel(song_frame, text=song, font=("Arial", 11, "bold"), fg_color="#2d3748", text_color="white",
-                              width=250, height=30, corner_radius=10)
-    song_label.pack(pady=3)
-    song_label.bind("<Button-1>", lambda e, lbl=song_label, s=song: select_song(lbl, s))
+# Keep track of all song frames
+song_frames = []
 
-# ---------------- Upload Song Section ----------------
-upload_section = ctk.CTkFrame(download_section, fg_color="#1a202c")
-upload_section.pack(pady=10)
+# Create song rows
+for song, bg_color in songs:
+    song_frame = ctk.CTkFrame(favorite_songs_frame, fg_color=f"#{bg_color}", corner_radius=10, height=50)
+    song_frame.pack(fill="x", pady=5, ipady=5)
+    
+    # Make sure the frame stays at desired height
+    song_frame.pack_propagate(False)
+    
+    # Song label with icon - center align text
+    song_label = ctk.CTkLabel(song_frame, text=song, font=("Arial", 14), text_color="white", anchor="center")
+    song_label.pack(fill="both", expand=True)
+    
+    # Make song selectable
+    song_frame.bind("<Button-1>", lambda e, frame=song_frame, name=song: select_song(frame, name))
+    song_label.bind("<Button-1>", lambda e, frame=song_frame, name=song: select_song(frame, name))
+    
+    # Add to list of song frames
+    song_frames.append(song_frame)
 
-upload_label = ctk.CTkLabel(upload_section, text="📁 Upload Your Own Song", font=("Arial", 11, "bold"),
-                            text_color="gray")
-upload_label.pack()
+# Download button at the bottom
+button_frame = ctk.CTkFrame(favorite_songs_frame, fg_color="#131B2E")
+button_frame.pack(pady=25)
 
-def upload_song():
-    file_path = filedialog.askopenfilename(filetypes=[("Audio Files", "*.mp3 *.wav *.flac")])
-    if file_path:
-        upload_label.configure(text=f"Uploaded: {file_path.split('/')[-1]}", text_color="green")
-
-upload_btn = ctk.CTkButton(upload_section, text="📤 Choose File", font=("Arial", 11, "bold"), fg_color="#4a5568",
-                           hover_color="#6b7280", text_color="white", corner_radius=10, command=upload_song)
-upload_btn.pack(pady=5)
-
-# ---------------- Download & Upload Buttons ----------------
-buttons_section = ctk.CTkFrame(download_section, fg_color="#1a202c")
-buttons_section.pack(pady=15)
-
-def download_song():
+def download_selected():
     if selected_song:
-        print(f"Downloading: {selected_song}")  # Simulate download action
-    else:
-        print("No song selected!")
+        print(f"Downloading: {selected_song}")
+        # In a real app, this would handle the actual download
 
-download_button = ctk.CTkButton(buttons_section, text="⬇️ Download Selected", font=("Arial", 12, "bold"),
-                                fg_color="#9f7aea", hover_color="#6b46c1", text_color="white", height=40,
-                                corner_radius=10, command=download_song)
-download_button.pack(side="left", padx=5)
-
-upload_button = ctk.CTkButton(buttons_section, text="📤 Upload", font=("Arial", 12, "bold"), fg_color="#16a34a",
-                              hover_color="#15803d", text_color="white", height=40, corner_radius=10,
-                              command=upload_song)
-upload_button.pack(side="left", padx=5)
+download_button = ctk.CTkButton(button_frame, text="⬇️ Download Selected", font=("Arial", 14, "bold"), 
+                               fg_color="#B146EC", hover_color="#9333EA", 
+                               corner_radius=5, height=40, width=210, command=download_selected)
+download_button.pack()
 
 # ---------------- Run Application ----------------
 root.mainloop()

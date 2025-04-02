@@ -5,7 +5,7 @@ ctk.set_appearance_mode("dark")  # Dark mode
 ctk.set_default_color_theme("blue")  # Default theme
 
 root = ctk.CTk()
-root.title("Online Music System - Featured")
+root.title("Online Music System - Playlist")
 root.geometry("1000x600")  # Adjusted to match the image proportions
 root.resizable(False, False)
 
@@ -62,77 +62,70 @@ content_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
 header_frame = ctk.CTkFrame(content_frame, fg_color="#131B2E", height=40)
 header_frame.pack(fill="x", padx=20, pady=(20, 0))
 
-# Left side: Featured
-featured_label = ctk.CTkLabel(header_frame, text="Featured", font=("Arial", 24, "bold"), text_color="white")
-featured_label.pack(side="left")
+# Left side: Playlist
+playlist_label = ctk.CTkLabel(header_frame, text="Playlist", font=("Arial", 24, "bold"), text_color="white")
+playlist_label.pack(side="left")
 
 # Right side: Username
 user_label = ctk.CTkLabel(header_frame, text="Hello, User!", font=("Arial", 14), text_color="#A0A0A0")
 user_label.pack(side="right")
 
-# ---------------- Our Playlists ----------------
-our_playlists_frame = ctk.CTkFrame(content_frame, fg_color="#131B2E")
-our_playlists_frame.pack(fill="x", padx=20, pady=(40, 20))
+# ---------------- Currently Playing Playlist ----------------
+currently_playing_frame = ctk.CTkFrame(content_frame, fg_color="#131B2E")
+currently_playing_frame.pack(fill="x", padx=20, pady=(40, 10))
 
-# Section title
-our_playlists_title = ctk.CTkLabel(our_playlists_frame, text="Our Playlists :", 
-                                  font=("Arial", 20, "bold"), text_color="#B146EC")
-our_playlists_title.pack(anchor="w", pady=(0, 20))
+# Section title - centered
+currently_playing_title = ctk.CTkLabel(currently_playing_frame, text="Currently Playing Playlist", 
+                                      font=("Arial", 24, "bold"), text_color="#B146EC")
+currently_playing_title.pack(pady=(0, 5))
 
-# Playlist cards container
-our_playlists_cards = ctk.CTkFrame(our_playlists_frame, fg_color="#131B2E")
-our_playlists_cards.pack(fill="x")
+# Subtitle - centered
+subtitle = ctk.CTkLabel(currently_playing_frame, text="Choose a song to play from your playlist!", 
+                       font=("Arial", 14), text_color="#A0A0A0")
+subtitle.pack(pady=(0, 20))
 
-# Playlist items
-our_playlists = ["Coding", "LoFi", "Bass"]
+# Song list container
+songs_frame = ctk.CTkFrame(currently_playing_frame, fg_color="#1A1A2E", corner_radius=10)
+songs_frame.pack(fill="x", pady=10, ipady=15)
 
-for playlist in our_playlists:
-    # Create playlist card
-    card = ctk.CTkFrame(our_playlists_cards, fg_color="#1A1A2E", corner_radius=15, 
-                       width=150, height=100)
-    card.pack(side="left", padx=10)
-    card.pack_propagate(False)  # Prevent resizing
+# Song list
+songs = [
+    ("Don Toliver - No Idea [Official Music Video].mp3", "green"),
+    ("Rick Astley - Never Gonna Give You Up (Official Music).mp3", "white")
+]
+
+for song, color in songs:
+    # Song row
+    song_row = ctk.CTkFrame(songs_frame, fg_color="#1A1A2E", height=30)
+    song_row.pack(fill="x", padx=15, pady=5)
     
-    # Center text in card
-    label = ctk.CTkLabel(card, text=playlist, font=("Arial", 16, "bold"), text_color="white")
-    label.place(relx=0.5, rely=0.5, anchor="center")
-
-# ---------------- Your Playlists ----------------
-your_playlists_frame = ctk.CTkFrame(content_frame, fg_color="#131B2E")
-your_playlists_frame.pack(fill="x", padx=20, pady=(30, 20))
-
-# Section title
-your_playlists_title = ctk.CTkLabel(your_playlists_frame, text="Your Playlists :", 
-                                   font=("Arial", 20, "bold"), text_color="#B146EC")
-your_playlists_title.pack(anchor="w", pady=(0, 20))
-
-# Playlist cards container
-your_playlists_cards = ctk.CTkFrame(your_playlists_frame, fg_color="#131B2E")
-your_playlists_cards.pack(fill="x")
-
-# Add new playlist button
-add_playlist = ctk.CTkFrame(your_playlists_cards, fg_color="#2A2A3E", corner_radius=15, 
-                           width=150, height=100)
-add_playlist.pack(side="left", padx=10)
-add_playlist.pack_propagate(False)  # Prevent resizing
-
-# Add Plus sign
-plus_label = ctk.CTkLabel(add_playlist, text="+", font=("Arial", 30, "bold"), text_color="#A0A0A0")
-plus_label.place(relx=0.5, rely=0.5, anchor="center")
-
-# Your playlist items
-your_playlists = ["Playlist 1", "Playlist 2"]
-
-for playlist in your_playlists:
-    # Create playlist card
-    card = ctk.CTkFrame(your_playlists_cards, fg_color="#1A1A2E", corner_radius=15, 
-                       width=150, height=100)
-    card.pack(side="left", padx=10)
-    card.pack_propagate(False)  # Prevent resizing
+    # Bullet point and song name
+    if color == "green":
+        bullet = "• "
+        text_color = "#22C55E"  # Green color for the first song
+    else:
+        bullet = "• "
+        text_color = "white"
     
-    # Center text in card
-    label = ctk.CTkLabel(card, text=playlist, font=("Arial", 16, "bold"), text_color="white")
-    label.place(relx=0.5, rely=0.5, anchor="center")
+    song_label = ctk.CTkLabel(song_row, text=f"{bullet}{song}", 
+                             font=("Arial", 14), text_color=text_color, anchor="w")
+    song_label.pack(side="left", fill="x")
+
+# Button container
+button_frame = ctk.CTkFrame(currently_playing_frame, fg_color="#131B2E")
+button_frame.pack(pady=(20, 0))
+
+# Play button
+play_button = ctk.CTkButton(button_frame, text="▶ PLAY", font=("Arial", 14, "bold"), 
+                           fg_color="#B146EC", hover_color="#9333EA", 
+                           corner_radius=5, height=40, width=140)
+play_button.pack(side="left", padx=10)
+
+# Refresh button
+refresh_button = ctk.CTkButton(button_frame, text="⟳ REFRESH", font=("Arial", 14, "bold"), 
+                              fg_color="#3A3A5E", hover_color="#4A4A6E", 
+                              corner_radius=5, height=40, width=140)
+refresh_button.pack(side="left", padx=10)
 
 # ---------------- Run Application ----------------
 root.mainloop()

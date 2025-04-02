@@ -5,7 +5,7 @@ ctk.set_appearance_mode("dark")  # Dark mode
 ctk.set_default_color_theme("blue")  # Default theme
 
 root = ctk.CTk()
-root.title("Online Music System - Recommended Songs")
+root.title("Online Music System - Search Songs")
 root.geometry("1000x600")  # Adjusted to match the image proportions
 root.resizable(False, False)
 
@@ -24,10 +24,10 @@ title_label.pack(pady=(25, 30))
 # Sidebar Menu Items
 menu_items = [
     ("🏠 Home", "#111827", "#A0A0A0"),
-    ("🔍 Search", "#111827", "#A0A0A0"),
+    ("🔍 Search", "#111827", "white"),  # Highlighted as active
     ("🎵 Playlist", "#111827", "#A0A0A0"),
     ("⬇️ Download", "#111827", "#A0A0A0"),
-    ("🎧 Recommend Songs", "#111827", "white"),  # Highlighted as active
+    ("🎧 Recommend Songs", "#111827", "#A0A0A0"),
     ("🚪 Logout", "#111827", "#A0A0A0")
 ]
 
@@ -62,56 +62,70 @@ content_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
 header_frame = ctk.CTkFrame(content_frame, fg_color="#131B2E", height=40)
 header_frame.pack(fill="x", padx=20, pady=(20, 0))
 
-# Left side: Recommended Songs
-recommend_label = ctk.CTkLabel(header_frame, text="Recommended Songs", font=("Arial", 24, "bold"), text_color="white")
-recommend_label.pack(side="left")
+# Left side: Search Songs
+search_label = ctk.CTkLabel(header_frame, text="Search Songs", font=("Arial", 24, "bold"), text_color="white")
+search_label.pack(side="left")
 
 # Right side: Username
 user_label = ctk.CTkLabel(header_frame, text="Hello, User!", font=("Arial", 14), text_color="#A0A0A0")
 user_label.pack(side="right")
 
-# ---------------- Songs You Might Like ----------------
-songs_frame = ctk.CTkFrame(content_frame, fg_color="#131B2E")
-songs_frame.pack(fill="both", expand=True, padx=20, pady=(40, 0))
+# ---------------- Search Bar ----------------
+search_frame = ctk.CTkFrame(content_frame, fg_color="#131B2E")
+search_frame.pack(fill="x", padx=20, pady=(30, 20))
 
-# Section title - centered
-title_label = ctk.CTkLabel(songs_frame, text="Songs You Might Like 🎵", 
-                          font=("Arial", 24, "bold"), text_color="#B146EC")
-title_label.pack(pady=(0, 5))
+# Search entry with rounded corners
+search_entry = ctk.CTkEntry(search_frame, 
+                          placeholder_text="Search for songs, artists, or albums...",
+                          font=("Arial", 14), text_color="#FFFFFF",
+                          fg_color="#1A1A2E", border_color="#2A2A4E", 
+                          height=45, corner_radius=10)
+search_entry.pack(fill="x")
 
-# Subtitle - centered
-subtitle_label = ctk.CTkLabel(songs_frame, text="Discover music based on your taste.", 
-                             font=("Arial", 14), text_color="#A0A0A0")
-subtitle_label.pack(pady=(0, 20))
+# ---------------- Available Songs Section ----------------
+songs_section = ctk.CTkFrame(content_frame, fg_color="#131B2E")
+songs_section.pack(fill="both", expand=True, padx=20, pady=10)
 
-# Songs list
+# Section title
+songs_title = ctk.CTkLabel(songs_section, text="Available Songs 🎵", 
+                          font=("Arial", 20, "bold"), text_color="#B146EC")
+songs_title.pack(anchor="w", pady=(0, 15))
+
+# Song list
 songs = [
-    ("🎧 The Weeknd - Blinding Lights", "1A1A2E"),
-    ("🎵 Dua Lipa - Levitating", "1A1A2E"),
-    ("🎸 Imagine Dragons - Believer", "1A1A2E"),
-    ("🎵 Ed Sheeran - Shape of You", "1A1A2E")
+    ("🎧 The Weeknd - Blinding Lights", "headphones"),
+    ("🎵 Dua Lipa - Levitating", "musical_note"),
+    ("🎸 Imagine Dragons - Believer", "guitar"),
+    ("🎵 Ed Sheeran - Shape of You", "musical_note"),
+    ("🎵 Post Malone - Circles", "musical_note"),
+    ("🎧 Taylor Swift - Shake It Off", "headphones")
 ]
 
-# Create song rows
-for song, bg_color in songs:
-    song_frame = ctk.CTkFrame(songs_frame, fg_color=f"#{bg_color}", corner_radius=10, height=50)
-    song_frame.pack(fill="x", pady=5, ipady=5)
-    
-    # Make sure the frame stays at desired height
-    song_frame.pack_propagate(False)
-    
-    # Song label with icon
-    song_label = ctk.CTkLabel(song_frame, text=song, font=("Arial", 14), text_color="white")
-    song_label.place(relx=0.5, rely=0.5, anchor="center")
+def play_song(song_name):
+    print(f"Playing {song_name}")
+    # In a real app, this would trigger the song to play
 
-# Refresh button at the bottom
-button_frame = ctk.CTkFrame(songs_frame, fg_color="#131B2E")
-button_frame.pack(pady=25)
-
-refresh_button = ctk.CTkButton(button_frame, text="⟳ Refresh", font=("Arial", 14, "bold"), 
-                              fg_color="#B146EC", hover_color="#9333EA", 
-                              corner_radius=5, height=40, width=140)
-refresh_button.pack()
+for i, (song, icon) in enumerate(songs):
+    # Create a frame for each song row
+    song_frame = ctk.CTkFrame(songs_section, fg_color="#1A1A2E", corner_radius=10, height=50)
+    song_frame.pack(fill="x", pady=5)
+    
+    # Song name
+    song_label = ctk.CTkLabel(song_frame, text=song, 
+                            font=("Arial", 14), text_color="white",
+                            anchor="w")
+    song_label.pack(side="left", padx=15, fill="y")
+    
+    # Instead of using CTkButton with an image, we'll use a label for the play icon
+    
+    # Using an emoji as a button since we can't load images directly
+    play_icon = ctk.CTkLabel(song_frame, text="▶️", font=("Arial", 16), text_color="#22C55E")
+    play_icon.pack(side="right", padx=15)
+    
+    # Make the whole row clickable
+    song_frame.bind("<Button-1>", lambda e, s=song.split(" - ")[1]: play_song(s))
+    song_label.bind("<Button-1>", lambda e, s=song.split(" - ")[1]: play_song(s))
+    play_icon.bind("<Button-1>", lambda e, s=song.split(" - ")[1]: play_song(s))
 
 # ---------------- Run Application ----------------
 root.mainloop()

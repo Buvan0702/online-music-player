@@ -1,21 +1,27 @@
 import customtkinter as ctk
 from tkinter import messagebox
-import mysql.connector
-import hashlib
 import subprocess  # To open signup.py and home.py
 
-# ------------------- Database Connection -------------------
+# Initialize CustomTkinter
+ctk.set_appearance_mode("light")
+ctk.set_default_color_theme("blue")
+
+# ------------------- Database Functions (Commented out for testing) -------------------
+"""
+import mysql.connector
+import hashlib
+
 def connect_db():
     return mysql.connector.connect(
         host="localhost",
-        user="root",  # Replace with your MySQL username
-        password="new_password",  # Replace with your MySQL password
-        database="online_music_system"  # Replace with your database name
+        user="root",
+        password="new_password",
+        database="online_music_system"
     )
 
-# ------------------- Password Hashing -------------------
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
+"""
 
 # ------------------- Login Function -------------------
 def login_user():
@@ -25,7 +31,13 @@ def login_user():
     if not email or not password:
         messagebox.showwarning("Input Error", "Please enter both email and password.")
         return
-
+    
+    # For testing purposes, just show success message
+    messagebox.showinfo("Success", f"Welcome User!")
+    # In a real app, you would verify credentials here
+    
+    """
+    # Database code commented out for testing
     hashed_password = hash_password(password)
 
     try:
@@ -40,8 +52,8 @@ def login_user():
         if user:
             first_name, last_name = user
             messagebox.showinfo("Success", f"Welcome {first_name} {last_name}!")
-            root.destroy()  # Close the login window upon successful login
-            open_home_page()  # Open the home page after login
+            root.destroy()
+            open_home_page()
         else:
             messagebox.showerror("Login Failed", "Invalid Email or Password.")
     
@@ -51,128 +63,158 @@ def login_user():
         if connection.is_connected():
             cursor.close()
             connection.close()
+    """
 
-# ------------------- Open Home Page -------------------
+# ------------------- Navigation Functions -------------------
 def open_home_page():
     try:
-        subprocess.Popen(["python", "home.py"])  # Open home.py after successful login
+        subprocess.Popen(["python", "home.py"])
     except Exception as e:
         messagebox.showerror("Error", f"Unable to open home page: {e}")
 
-# ------------------- Open Sign Up Page -------------------
 def open_signup_page():
     try:
-        subprocess.Popen(["python", "signup.py"])  # Open signup.py when Sign Up is clicked
-        root.quit()  # Close the login window
+        messagebox.showinfo("Navigation", "Opening signup page...")
+        # In a real app: subprocess.Popen(["python", "signup.py"])
+        # root.quit()
     except Exception as e:
         messagebox.showerror("Error", f"Unable to open signup page: {e}")
 
-# ---------------- Initialize CustomTkinter ----------------
-ctk.set_appearance_mode("dark")  # Dark Mode
-ctk.set_default_color_theme("blue")
-
 # ---------------- Main Application Window ----------------
-root = ctk.CTk()
-root.title("Online Music System - Login")
-root.geometry("750x450")
-root.resizable(False, False)
+try:
+    # Main window - adjusted to match the image proportions
+    root = ctk.CTk()
+    root.title("Online Music System - Login")
+    root.geometry("700x500")  # Changed to match image proportions
+    root.resizable(False, False)
 
-# ---------------- Main Frame (Holds everything) ----------------
-main_frame = ctk.CTkFrame(root, fg_color="white", corner_radius=0)
-main_frame.place(relx=0.5, rely=0.5, anchor="center")
+    # Main Frame with rounded corners
+    main_frame = ctk.CTkFrame(root, corner_radius=20)
+    main_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-# ---------------- Left Side - Branding ----------------
-left_frame = ctk.CTkFrame(main_frame, fg_color="#1a202c", width=300, height=450, corner_radius=0)
-left_frame.pack(side="left", fill="y")
+    # Left Side - Branding (adjusted color to match image)
+    left_frame = ctk.CTkFrame(main_frame, fg_color="#B146EC", width=350, height=480, corner_radius=20)
+    left_frame.pack(side="left", fill="both")
 
-title_label = ctk.CTkLabel(left_frame, text="🎵 Online Music System",
-                           font=("Arial", 18, "bold"), text_color="white")
-title_label.place(relx=0.5, rely=0.4, anchor="center")
+    # Title on the left side - adjusted position
+    title_label = ctk.CTkLabel(left_frame, text="Online Music\nSystem",
+                              font=("Arial", 36, "bold"), text_color="white")
+    title_label.place(relx=0.5, rely=0.22, anchor="center")
 
-desc_label = ctk.CTkLabel(left_frame, text="Enjoy unlimited ad-free music anytime, anywhere.\n"
-                                           "Access premium playlists and high-quality audio streaming.",
-                          font=("Arial", 10), text_color="lightgray", wraplength=250)
-desc_label.place(relx=0.5, rely=0.55, anchor="center")
+    # Description text below title - adjusted position
+    desc_label = ctk.CTkLabel(left_frame, text="Enjoy unlimited *ad-free music*\nanytime, anywhere. Access premium\nplaylists and high-quality audio\nstreaming.",
+                              font=("Arial", 14), text_color="white", justify="center")
+    desc_label.place(relx=0.5, rely=0.40, anchor="center")
 
-# ---------------- Right Side - Login Form ----------------
-right_frame = ctk.CTkFrame(main_frame, fg_color="white", width=450, height=450, corner_radius=0)
-right_frame.pack(side="right", fill="both", expand=True, padx=30, pady=30)
+    # Add music bird illustration
+    ctk.CTkLabel(left_frame, text="🎵🐦", font=("Arial", 40), text_color="white").place(relx=0.5, rely=0.75, anchor="center")
 
-ctk.CTkLabel(right_frame, text="Welcome Back!", font=("Arial", 16, "bold"), text_color="black").pack(anchor="w")
-ctk.CTkLabel(right_frame, text="Login to explore a world of non-stop music.",
-             font=("Arial", 10), text_color="gray").pack(anchor="w", pady=(0, 10))
+    # Right Side - Login Form
+    right_frame = ctk.CTkFrame(main_frame, fg_color="white", width=350, height=480, corner_radius=0)
+    right_frame.pack(side="right", fill="both", expand=True)
 
-# ---------------- Modern Styled Entry Boxes ----------------
-# --- Email Entry ---
-email_frame = ctk.CTkFrame(right_frame, fg_color="white", border_width=1, border_color="#ddd", corner_radius=0)
-email_frame.pack(fill="x", pady=5)
+    # Create a container for the right side content with proper padding
+    content_frame = ctk.CTkFrame(right_frame, fg_color="white")
+    content_frame.pack(fill="both", expand=True, padx=40, pady=40)
 
-email_icon = ctk.CTkLabel(email_frame, text="📧", font=("Arial", 14), text_color="black")
-email_icon.pack(side="left", padx=10)
+    # Welcome Back! label
+    welcome_label = ctk.CTkLabel(content_frame, text="Welcome Back!", 
+                                font=("Arial", 28, "bold"), text_color="#B146EC")
+    welcome_label.pack(anchor="w", pady=(5, 0))
 
-email_entry = ctk.CTkEntry(email_frame, font=("Arial", 12), fg_color="white", text_color="black",
-                           border_width=0, placeholder_text="Enter your email")
-email_entry.pack(side="left", padx=5, ipady=8, expand=True)
+    # Subtitle
+    subtitle_label = ctk.CTkLabel(content_frame, text="Login to explore a world of non-stop music.",
+                                 font=("Arial", 12), text_color="gray")
+    subtitle_label.pack(anchor="w", pady=(0, 30))
 
-# --- Password Entry with Toggle ---
-password_frame = ctk.CTkFrame(right_frame, fg_color="white", border_width=1, border_color="#ddd", corner_radius=0)
-password_frame.pack(fill="x", pady=5)
+    # Email Address label
+    email_label = ctk.CTkLabel(content_frame, text="Email Address", 
+                              font=("Arial", 14, "bold"), text_color="#333333")
+    email_label.pack(anchor="w", pady=(0, 5))
 
-password_icon = ctk.CTkLabel(password_frame, text="🔒", font=("Arial", 14), text_color="black")
-password_icon.pack(side="left", padx=10)
+    # Email entry with proper icon placement
+    email_frame = ctk.CTkFrame(content_frame, fg_color="transparent")
+    email_frame.pack(fill="x", pady=(0, 15))
+    
+    email_entry = ctk.CTkEntry(email_frame, font=("Arial", 12), 
+                              height=45, corner_radius=8,
+                              border_width=1, border_color="#DDDDDD",
+                              fg_color="white", text_color="black")
+    email_entry.pack(fill="x", side="left", expand=True)
+    
+    email_icon = ctk.CTkLabel(email_frame, text="✉️", font=("Arial", 14), fg_color="transparent")
+    email_icon.pack(side="right", padx=(0, 10))
 
-password_entry = ctk.CTkEntry(password_frame, font=("Arial", 12), fg_color="white", text_color="black",
-                              border_width=0, show="*", placeholder_text="Enter your password")
-password_entry.pack(side="left", padx=5, ipady=8, expand=True)
+    # Password label
+    password_label = ctk.CTkLabel(content_frame, text="Password", 
+                                 font=("Arial", 14, "bold"), text_color="#333333")
+    password_label.pack(anchor="w", pady=(5, 5))
 
-def toggle_password():
-    if password_entry.cget("show") == "*":
-        password_entry.configure(show="")
-        eye_button.configure(text="👁")
-    else:
-        password_entry.configure(show="*")
-        eye_button.configure(text="🔒")
+    # Password entry with proper icon placement
+    password_frame = ctk.CTkFrame(content_frame, fg_color="transparent")
+    password_frame.pack(fill="x", pady=(0, 15))
+    
+    password_entry = ctk.CTkEntry(password_frame, font=("Arial", 12), 
+                                 height=45, corner_radius=8, 
+                                 border_width=1, border_color="#DDDDDD",
+                                 fg_color="white", text_color="black", 
+                                 show="*")
+    password_entry.pack(fill="x", side="left", expand=True)
+    
+    password_icon = ctk.CTkLabel(password_frame, text="🔒", font=("Arial", 14), fg_color="transparent")
+    password_icon.pack(side="right", padx=(0, 10))
 
-eye_button = ctk.CTkLabel(password_frame, text="👁", font=("Arial", 14), text_color="black", cursor="hand2")
-eye_button.pack(side="right", padx=10)
-eye_button.bind("<Button-1>", lambda e: toggle_password())
+    # Remember Me & Forgot Password row - proper spacing
+    remember_frame = ctk.CTkFrame(content_frame, fg_color="transparent")
+    remember_frame.pack(fill="x", pady=(5, 20))
 
-# ---------------- Remember Me & Forgot Password ----------------
-remember_frame = ctk.CTkFrame(right_frame, fg_color="white")
-remember_frame.pack(fill="x", pady=5)
+    # Remember me checkbox
+    remember_var = ctk.BooleanVar()
+    remember_check = ctk.CTkCheckBox(remember_frame, text="Remember me", 
+                                    variable=remember_var, 
+                                    text_color="#333333", font=("Arial", 12),
+                                    fg_color="#B146EC", border_color="#DDDDDD",
+                                    checkbox_height=20, checkbox_width=20)
+    remember_check.pack(side="left")
 
-remember_var = ctk.BooleanVar()
-remember_check = ctk.CTkCheckBox(remember_frame, text="Remember me", variable=remember_var, fg_color="white",
-                                 text_color="black", font=("Arial", 10), checkbox_height=18, checkbox_width=18)
-remember_check.pack(side="left")
+    # Forgot password link
+    forgot_pass = ctk.CTkLabel(remember_frame, text="Forgot password?", 
+                              font=("Arial", 12), text_color="gray",
+                              cursor="hand2")
+    forgot_pass.pack(side="right")
 
-forgot_pass = ctk.CTkLabel(remember_frame, text="Forgot password?", font=("Arial", 10), text_color="gray",
-                           cursor="hand2")
-forgot_pass.pack(side="right")
+    # Login button with login icon
+    login_button = ctk.CTkButton(content_frame, text="Login", 
+                                font=("Arial", 14, "bold"),
+                                fg_color="#B146EC", hover_color="#9333EA", 
+                                text_color="white", corner_radius=8, 
+                                height=45, command=login_user)
+    login_button.pack(fill="x", pady=(10, 25))
+    
+    # Add an arrow icon to the login button (simulating the icon in the image)
+    login_icon_label = ctk.CTkLabel(login_button, text="→", font=("Arial", 16, "bold"), text_color="white")
+    login_icon_label.place(relx=0.9, rely=0.5, anchor="e")
 
-# ---------------- Login Button ----------------
-login_button = ctk.CTkButton(right_frame, text="Login", font=("Arial", 12, "bold"),
-                             fg_color="#1a202c", text_color="white", corner_radius=5, height=35, command=login_user)
-login_button.pack(fill="x", pady=(10, 10))
+    # Don't have an account text
+    signup_frame = ctk.CTkFrame(content_frame, fg_color="transparent")
+    signup_frame.pack(pady=0)
 
-# ---------------- Signup Link ----------------
-signup_label = ctk.CTkLabel(right_frame, text="Don't have an account? Sign up", font=("Arial", 10),
-                            text_color="black", cursor="hand2", command=open_signup_page)
-signup_label.pack(pady=5)
+    account_label = ctk.CTkLabel(signup_frame, text="Don't have an account? ", 
+                                font=("Arial", 12), text_color="#333333")
+    account_label.pack(side="left")
 
-# ---------------- Social Media Login ----------------
-ctk.CTkLabel(right_frame, text="Or sign in with", font=("Arial", 10), text_color="gray").pack()
+    # "Sign up" in purple and bold
+    signup_label = ctk.CTkLabel(signup_frame, text="Sign up", 
+                               font=("Arial", 12, "bold"), 
+                               text_color="#B146EC", cursor="hand2")
+    signup_label.pack(side="left")
+    signup_label.bind("<Button-1>", lambda e: open_signup_page())
 
-social_frame = ctk.CTkFrame(right_frame, fg_color="white")
-social_frame.pack(pady=5)
+    # Start the main loop
+    root.mainloop()
 
-facebook_button = ctk.CTkButton(social_frame, text="Facebook", font=("Arial", 10, "bold"),
-                                fg_color="#1877F2", text_color="white", width=90, corner_radius=5)
-facebook_button.pack(side="left", padx=5)
-
-google_button = ctk.CTkButton(social_frame, text="Google", font=("Arial", 10, "bold"),
-                              fg_color="#DB4437", text_color="white", width=90, corner_radius=5)
-google_button.pack(side="right", padx=5)
-
-# ---------------- Run Application ----------------
-root.mainloop()
+except Exception as e:
+    import traceback
+    print(f"Error: {e}")
+    traceback.print_exc()
+    input("Press Enter to exit...")  # This keeps the console open

@@ -2,18 +2,18 @@ import customtkinter as ctk
 from tkinter import messagebox
 import mysql.connector
 import hashlib
-import subprocess
+import subprocess  # To open login.py
 import os
 
-# Database and user functions remain the same
+# ------------------- Database Connection -------------------
 def connect_db():
     """Connect to the MySQL database"""
     try:
         connection = mysql.connector.connect(
             host="localhost",
-            user="root",
-            password="new_password",
-            database="online_music_system"
+            user="root",  # Replace with your MySQL username
+            password="new_password",  # Replace with your MySQL password
+            database="online_music_system"  # Replace with your database name
         )
         return connection
     except mysql.connector.Error as err:
@@ -21,10 +21,12 @@ def connect_db():
                             f"Failed to connect to database: {err}")
         return None
 
+# ------------------- Password Hashing -------------------
 def hash_password(password):
     """Hash password using SHA-256"""
     return hashlib.sha256(password.encode()).hexdigest()
 
+# ------------------- Validation Functions -------------------
 def validate_email(email):
     """Simple email validation"""
     import re
@@ -35,6 +37,7 @@ def validate_password(password):
     """Password validation - at least 8 characters"""
     return len(password) >= 8
 
+# ------------------- Sign Up Function -------------------
 def signup_user():
     """Register a new user in the database"""
     full_name = fullname_entry.get()
@@ -42,24 +45,27 @@ def signup_user():
     password = password_entry.get()
     confirm_password = confirm_password_entry.get()
 
-    # Validation code remains the same
+    # Check if any fields are empty
     if not full_name or not email or not password or not confirm_password:
         messagebox.showwarning("Input Error", "All fields are required.")
         return
 
+    # Validate email format
     if not validate_email(email):
         messagebox.showwarning("Email Error", "Please enter a valid email address.")
         return
 
+    # Validate password strength
     if not validate_password(password):
         messagebox.showwarning("Password Error", "Password must be at least 8 characters long.")
         return
 
+    # Check if passwords match
     if password != confirm_password:
         messagebox.showwarning("Password Error", "Passwords do not match.")
         return
 
-    # Split full name into first and last name
+    # Split full name into first and last name (assuming space separator)
     name_parts = full_name.split(" ", 1)
     first_name = name_parts[0]
     last_name = name_parts[1] if len(name_parts) > 1 else ""
@@ -74,19 +80,22 @@ def signup_user():
             
         cursor = connection.cursor()
 
-        # Database operations remain the same
+        # Check if email already exists
         cursor.execute("SELECT user_id FROM Users WHERE email = %s", (email,))
         if cursor.fetchone():
             messagebox.showwarning("Registration Error", "This email is already registered.")
             return
 
+        # Insert the user data into the database
         cursor.execute(
             "INSERT INTO Users (first_name, last_name, email, password) VALUES (%s, %s, %s, %s)",
             (first_name, last_name, email, hashed_password)
         )
 
+        # Get the new user ID
         user_id = cursor.lastrowid
 
+        # Create default playlist for the user
         cursor.execute(
             "INSERT INTO Playlists (user_id, name, description) VALUES (%s, %s, %s)",
             (user_id, "Favorites", "My favorite songs")
@@ -95,6 +104,7 @@ def signup_user():
         connection.commit()
         messagebox.showinfo("Success", "User registered successfully!")
         
+        # After successful registration, redirect to login page
         open_login_page()
 
     except mysql.connector.Error as err:
@@ -104,96 +114,109 @@ def signup_user():
             cursor.close()
             connection.close()
 
+# ------------------- Open Login Page -------------------
 def open_login_page():
     """Open the login page and close the signup page"""
     try:
-        subprocess.Popen(["python", "login.py"])
-        root.destroy()
+        subprocess.Popen(["python", "login.py"])  # Open login.py after successful signup
+        root.destroy()  # Close the current signup window
     except Exception as e:
         messagebox.showerror("Error", f"Unable to open login page: {e}")
 
-def update_layout(event=None):
-    """Update layout based on window size - this is the responsive function"""
-    window_width = root.winfo_width()
-    window_height = root.winfo_height()
+# ------------------- Responsive Layout Functions -------------------
+def adjust_layout_for_resolution(event=None):
+    """Adjust layout based on current window size"""
+    width = root.winfo_width()
+    height = root.winfo_height()
     
-    # Minimum sizes to prevent UI breaking
-    if window_width < 600:
-        window_width = 600
-        root.geometry(f"{window_width}x{window_height}")
+    # Minimum functional size check
+    if width < 500 or height < 400:
+        return  # Too small to adjust meaningfully
     
-    if window_height < 500:
-        window_height = 500
-        root.geometry(f"{window_width}x{window_height}")
+    # Get the scale factors compared to the design resolution
+    width_scale = width / 700
+    height_scale = height / 500
     
-    # Adjust layout based on window width
-    if window_width < 800:
-        # Stack vertically on smaller screens
-        left_frame.configure(width=window_width-20)
-        left_frame.pack(side="top", fill="x", padx=10, pady=(10, 5), ipadx=10, ipady=10)
-        
-        right_frame.configure(width=window_width-20)
-        right_frame.pack(side="top", fill="both", expand=True, padx=10, pady=(5, 10))
-        
-        # Make left frame shorter for vertical layout
-        title_label.configure(font=("Arial", 28, "bold"))
-        title_label.place(relx=0.5, rely=0.35, anchor="center")
-        
-        desc_label.configure(font=("Arial", 12))
-        desc_label.place(relx=0.5, rely=0.65, anchor="center")
-        
-        music_icon.place(relx=0.9, rely=0.5, anchor="center")
-        
+    # Determine if we're in compact mode (window too small for side-by-side)
+    compact_mode = width < 650
+    
+    if compact_mode:
+        # Switch to stacked layout
+        if left_frame.winfo_manager() == "pack":
+            # First unpack both frames
+            left_frame.pack_forget()
+            right_frame.pack_forget()
+            
+            # Make left frame shorter for the brand
+            left_frame.configure(height=150)
+            
+            # Re-pack in stacked mode
+            left_frame.pack(fill="x", expand=False)
+            right_frame.pack(fill="both", expand=True)
+            
+            # Adjust brand text layout
+            title_label.place(relx=0.5, rely=0.5, anchor="center")
+            desc_label.pack_forget()  # Hide description in compact mode
+            bird_label.pack_forget()  # Hide bird emoji in compact mode
     else:
-        # Side by side on larger screens
-        left_frame.configure(width=window_width//2-15)
-        left_frame.pack(side="left", fill="both", padx=(10, 5), pady=10)
-        
-        right_frame.configure(width=window_width//2-15)
-        right_frame.pack(side="right", fill="both", expand=True, padx=(5, 10), pady=10)
-        
-        # Adjust font sizes for larger screens
-        title_label.configure(font=("Arial", 36, "bold"))
-        title_label.place(relx=0.5, rely=0.22, anchor="center")
-        
-        desc_label.configure(font=("Arial", 14))
-        desc_label.place(relx=0.5, rely=0.40, anchor="center")
-        
-        music_icon.place(relx=0.5, rely=0.75, anchor="center")
+        # Switch to side-by-side layout
+        if left_frame.winfo_manager() == "pack" and left_frame.winfo_height() != height:
+            # First unpack both frames
+            left_frame.pack_forget()
+            right_frame.pack_forget()
+            
+            # Restore left frame size
+            left_frame.configure(height=480)
+            
+            # Re-pack in side-by-side mode
+            left_frame.pack(side="left", fill="both")
+            right_frame.pack(side="right", fill="both", expand=True)
+            
+            # Restore brand text layout
+            title_label.place(relx=0.5, rely=0.22, anchor="center")
+            desc_label.place(relx=0.5, rely=0.40, anchor="center")
+            bird_label.place(relx=0.5, rely=0.75, anchor="center")
     
-    # Adjust padding for input fields based on height
-    padding_factor = max(10, min(40, window_height // 20))
-    content_frame.pack_configure(padx=padding_factor, pady=padding_factor)
+    # Resize font sizes based on screen size
+    font_scale = min(width_scale, height_scale)
     
-    # Scale font sizes based on width
-    font_size_factor = max(10, min(14, window_width // 80))
-    signup_button.configure(font=("Arial", font_size_factor, "bold"))
+    # Ensure font scale stays reasonable
+    font_scale = max(0.8, min(font_scale, 1.2))
     
-    # Update the content frame to adjust to new size
-    content_frame.update()
+    # Update fonts for key elements
+    title_label.configure(font=("Arial", int(36 * font_scale), "bold"))
+    
+    if not compact_mode:
+        desc_label.configure(font=("Arial", int(14 * font_scale)))
+        bird_label.configure(font=("Arial", int(40 * font_scale)))
+    
+    # Adjust form elements
+    right_title_label.configure(font=("Arial", int(28 * font_scale), "bold"))
+    subtitle_label.configure(font=("Arial", int(12 * font_scale)))
+    
+    # Update padding based on screen size
+    content_frame.pack_configure(padx=int(40 * width_scale), pady=int(40 * height_scale))
 
+# ----------------- Setup UI -----------------
 try:
     # Create temp directory for temporary files if it doesn't exist
     os.makedirs("temp", exist_ok=True)
     
-    ctk.set_appearance_mode("light")
+    ctk.set_appearance_mode("light")  # Light Mode
     ctk.set_default_color_theme("blue")
 
     # Main window
     root = ctk.CTk()
     root.title("Online Music System - Sign Up")
-    root.geometry("700x500")
-    root.minsize(600, 500)  # Set minimum size
+    root.geometry("700x500")  # Default starting size
+    root.minsize(500, 400)    # Minimum functional size
     
-    # Make window resizable
-    root.resizable(True, True)
-
     # Main Frame with rounded corners
     main_frame = ctk.CTkFrame(root, corner_radius=20)
     main_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
     # Left Side - Branding with purple color
-    left_frame = ctk.CTkFrame(main_frame, fg_color="#B146EC", corner_radius=20)
+    left_frame = ctk.CTkFrame(main_frame, fg_color="#B146EC", width=350, height=480, corner_radius=20)
     left_frame.pack(side="left", fill="both")
 
     # Title on the left side
@@ -207,12 +230,12 @@ try:
                              font=("Arial", 14), text_color="white", justify="center")
     desc_label.place(relx=0.5, rely=0.40, anchor="center")
 
-    # Add music bird illustration
-    music_icon = ctk.CTkLabel(left_frame, text="🎵🐦", font=("Arial", 40), text_color="white")
-    music_icon.place(relx=0.5, rely=0.75, anchor="center")
+    # Add music bird illustration (same as login page)
+    bird_label = ctk.CTkLabel(left_frame, text="🎵🐦", font=("Arial", 40), text_color="white")
+    bird_label.place(relx=0.5, rely=0.75, anchor="center")
 
     # Right Side - Signup Form
-    right_frame = ctk.CTkFrame(main_frame, fg_color="white", corner_radius=0)
+    right_frame = ctk.CTkFrame(main_frame, fg_color="white", width=350, height=480, corner_radius=0)
     right_frame.pack(side="right", fill="both", expand=True)
 
     # Content container with padding
@@ -220,21 +243,21 @@ try:
     content_frame.pack(fill="both", expand=True, padx=40, pady=40)
 
     # Create an Account title
-    title_label_right = ctk.CTkLabel(content_frame, text="Create an Account", 
+    right_title_label = ctk.CTkLabel(content_frame, text="Create an Account", 
                               font=("Arial", 28, "bold"), text_color="#B146EC")
-    title_label_right.pack(anchor="w", pady=(0, 0))
+    right_title_label.pack(anchor="w", pady=(0, 0))
 
     # Subtitle
     subtitle_label = ctk.CTkLabel(content_frame, text="Sign up to start your journey into the world of music.",
                                  font=("Arial", 12), text_color="gray")
     subtitle_label.pack(anchor="w", pady=(0, 25))
 
-    # Remaining form elements with flexible layouts
-    # Full Name
+    # Full Name label
     fullname_label = ctk.CTkLabel(content_frame, text="Full Name", 
                                  font=("Arial", 14, "bold"), text_color="#333333")
     fullname_label.pack(anchor="w", pady=(0, 5))
 
+    # Full Name Entry with person icon
     fullname_frame = ctk.CTkFrame(content_frame, fg_color="transparent")
     fullname_frame.pack(fill="x", pady=(0, 15))
 
@@ -247,11 +270,12 @@ try:
     person_icon = ctk.CTkLabel(fullname_frame, text="👤", font=("Arial", 14), fg_color="transparent")
     person_icon.pack(side="right", padx=(0, 10))
 
-    # Email
+    # Email Address label
     email_label = ctk.CTkLabel(content_frame, text="Email Address", 
                               font=("Arial", 14, "bold"), text_color="#333333")
     email_label.pack(anchor="w", pady=(0, 5))
 
+    # Email Entry with envelope icon
     email_frame = ctk.CTkFrame(content_frame, fg_color="transparent")
     email_frame.pack(fill="x", pady=(0, 15))
 
@@ -264,11 +288,12 @@ try:
     email_icon = ctk.CTkLabel(email_frame, text="✉️", font=("Arial", 14), fg_color="transparent")
     email_icon.pack(side="right", padx=(0, 10))
 
-    # Password
+    # Password label
     password_label = ctk.CTkLabel(content_frame, text="Password", 
                                  font=("Arial", 14, "bold"), text_color="#333333")
     password_label.pack(anchor="w", pady=(0, 5))
 
+    # Password Entry with lock icon
     password_frame = ctk.CTkFrame(content_frame, fg_color="transparent")
     password_frame.pack(fill="x", pady=(0, 15))
 
@@ -282,11 +307,12 @@ try:
     password_icon = ctk.CTkLabel(password_frame, text="🔒", font=("Arial", 14), fg_color="transparent")
     password_icon.pack(side="right", padx=(0, 10))
 
-    # Confirm Password
+    # Confirm Password label
     confirm_password_label = ctk.CTkLabel(content_frame, text="Confirm Password", 
                                          font=("Arial", 14, "bold"), text_color="#333333")
     confirm_password_label.pack(anchor="w", pady=(0, 5))
 
+    # Confirm Password Entry with lock icon
     confirm_password_frame = ctk.CTkFrame(content_frame, fg_color="transparent")
     confirm_password_frame.pack(fill="x", pady=(0, 15))
 
@@ -300,7 +326,7 @@ try:
     confirm_password_icon = ctk.CTkLabel(confirm_password_frame, text="🔒", font=("Arial", 14), fg_color="transparent")
     confirm_password_icon.pack(side="right", padx=(0, 10))
 
-    # Sign Up button with arrow icon
+    # Sign Up button with arrow icon (to match login button)
     signup_button = ctk.CTkButton(content_frame, text="Sign Up", 
                                  font=("Arial", 14, "bold"),
                                  fg_color="#B146EC", hover_color="#9333EA", 
@@ -308,7 +334,7 @@ try:
                                  height=45, command=signup_user)
     signup_button.pack(fill="x", pady=(10, 20))
 
-    # Add an arrow icon to the signup button
+    # Add an arrow icon to the signup button (matching login)
     signup_icon_label = ctk.CTkLabel(signup_button, text="→", font=("Arial", 16, "bold"), text_color="white")
     signup_icon_label.place(relx=0.9, rely=0.5, anchor="e")
 
@@ -325,13 +351,13 @@ try:
                               text_color="#B146EC", cursor="hand2")
     login_label.pack(side="left")
     login_label.bind("<Button-1>", lambda e: open_login_page())
-
-    # Bind events for responsive layout
-    root.bind("<Configure>", update_layout)
     
-    # Initial layout update
+    # Set up the window resize event binding
+    root.bind("<Configure>", adjust_layout_for_resolution)
+    
+    # Initial layout adjustment after rendering
     root.update_idletasks()
-    update_layout()
+    adjust_layout_for_resolution()
 
     # Run the application
     root.mainloop()

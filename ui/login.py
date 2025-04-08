@@ -1,30 +1,37 @@
 import customtkinter as ctk
 from tkinter import messagebox
 import subprocess  # To open signup.py and home.py
-
-# Initialize CustomTkinter
-ctk.set_appearance_mode("light")
-ctk.set_default_color_theme("blue")
-
-# ------------------- Database Functions (Commented out for testing) -------------------
-"""
 import mysql.connector
 import hashlib
+import os
 
+# Initialize CustomTkinter
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("blue")
+
+# ------------------- Database Functions -------------------
 def connect_db():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="new_password",
-        database="online_music_system"
-    )
+    """Connect to the MySQL database"""
+    try:
+        connection = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="new_password",
+            database="online_music_system"
+        )
+        return connection
+    except mysql.connector.Error as err:
+        messagebox.showerror("Database Connection Error", 
+                             f"Failed to connect to database: {err}")
+        return None
 
 def hash_password(password):
+    """Hash password using SHA-256"""
     return hashlib.sha256(password.encode()).hexdigest()
-"""
 
 # ------------------- Login Function -------------------
 def login_user():
+    """Authenticate user and open home page if successful"""
     email = email_entry.get()
     password = password_entry.get()
 
@@ -32,26 +39,33 @@ def login_user():
         messagebox.showwarning("Input Error", "Please enter both email and password.")
         return
     
-    # For testing purposes, just show success message
-    messagebox.showinfo("Success", f"Welcome User!")
-    # In a real app, you would verify credentials here
-    
-    """
-    # Database code commented out for testing
+    # Hash the password for security
     hashed_password = hash_password(password)
 
     try:
         connection = connect_db()
+        if not connection:
+            return
+            
         cursor = connection.cursor()
         cursor.execute(
-            "SELECT first_name, last_name FROM Users WHERE email = %s AND password = %s",
+            "SELECT user_id, first_name, last_name FROM Users WHERE email = %s AND password = %s",
             (email, hashed_password)
         )
         user = cursor.fetchone()
 
         if user:
-            first_name, last_name = user
+            user_id, first_name, last_name = user
             messagebox.showinfo("Success", f"Welcome {first_name} {last_name}!")
+            
+            # Create user files directory if not exists
+            user_dir = f"temp/user_{user_id}"
+            os.makedirs(user_dir, exist_ok=True)
+            
+            # Save user ID to a file for session persistence
+            with open("current_user.txt", "w") as f:
+                f.write(str(user_id))
+                
             root.destroy()
             open_home_page()
         else:
@@ -60,32 +74,35 @@ def login_user():
     except mysql.connector.Error as err:
         messagebox.showerror("Database Error", str(err))
     finally:
-        if connection.is_connected():
+        if 'connection' in locals() and connection is not None and connection.is_connected():
             cursor.close()
             connection.close()
-    """
 
 # ------------------- Navigation Functions -------------------
 def open_home_page():
+    """Open the home page after successful login"""
     try:
         subprocess.Popen(["python", "home.py"])
     except Exception as e:
         messagebox.showerror("Error", f"Unable to open home page: {e}")
 
 def open_signup_page():
+    """Open the signup page"""
     try:
-        messagebox.showinfo("Navigation", "Opening signup page...")
-        # In a real app: subprocess.Popen(["python", "signup.py"])
-        # root.quit()
+        subprocess.Popen(["python", "signup.py"])
+        root.destroy()  # Close current window
     except Exception as e:
         messagebox.showerror("Error", f"Unable to open signup page: {e}")
 
 # ---------------- Main Application Window ----------------
 try:
-    # Main window - adjusted to match the image proportions
+    # Create temp directory for temporary files if it doesn't exist
+    os.makedirs("temp", exist_ok=True)
+    
+    # Main window with adjusted proportions
     root = ctk.CTk()
     root.title("Online Music System - Login")
-    root.geometry("700x500")  # Changed to match image proportions
+    root.geometry("700x500")
     root.resizable(False, False)
 
     # Main Frame with rounded corners

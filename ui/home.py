@@ -1,12 +1,14 @@
 import customtkinter as ctk
-from tkinter import messagebox
+from tkinter import messagebox, ttk
 import mysql.connector
 import subprocess
 import os
 import io
-from pygame import mixer
 import threading
 import time
+from PIL import Image, ImageTk
+from pygame import mixer
+import tempfile
 
 # Initialize mixer for music playback
 mixer.init()
@@ -74,92 +76,8 @@ def get_current_user():
             cursor.close()
             connection.close()
 
-def search_songs(query, search_type="all"):
-    """Search for songs in the database"""
-    try:
-        if not query:
-            return []
-            
-        connection = connect_db()
-        if not connection:
-            return []
-            
-        cursor = connection.cursor(dictionary=True)
-        
-        search_param = f"%{query}%"
-        
-        # Different queries based on search type
-        if search_type == "song":
-            query = """
-            SELECT s.song_id, s.title, a.name as artist_name, al.title as album_name, 
-                   g.name as genre, s.duration
-            FROM Songs s
-            JOIN Artists a ON s.artist_id = a.artist_id
-            LEFT JOIN Albums al ON s.album_id = al.album_id
-            LEFT JOIN Genres g ON s.genre_id = g.genre_id
-            WHERE s.title LIKE %s
-            ORDER BY s.title
-            """
-            cursor.execute(query, (search_param,))
-        
-        elif search_type == "artist":
-            query = """
-            SELECT s.song_id, s.title, a.name as artist_name, al.title as album_name, 
-                   g.name as genre, s.duration
-            FROM Songs s
-            JOIN Artists a ON s.artist_id = a.artist_id
-            LEFT JOIN Albums al ON s.album_id = al.album_id
-            LEFT JOIN Genres g ON s.genre_id = g.genre_id
-            WHERE a.name LIKE %s
-            ORDER BY s.title
-            """
-            cursor.execute(query, (search_param,))
-            
-        elif search_type == "album":
-            query = """
-            SELECT s.song_id, s.title, a.name as artist_name, al.title as album_name, 
-                   g.name as genre, s.duration
-            FROM Songs s
-            JOIN Artists a ON s.artist_id = a.artist_id
-            LEFT JOIN Albums al ON s.album_id = al.album_id
-            LEFT JOIN Genres g ON s.genre_id = g.genre_id
-            WHERE al.title LIKE %s
-            ORDER BY s.title
-            """
-            cursor.execute(query, (search_param,))
-            
-        else:  # "all" - search everything
-            query = """
-            SELECT s.song_id, s.title, a.name as artist_name, al.title as album_name, 
-                   g.name as genre, s.duration
-            FROM Songs s
-            JOIN Artists a ON s.artist_id = a.artist_id
-            LEFT JOIN Albums al ON s.album_id = al.album_id
-            LEFT JOIN Genres g ON s.genre_id = g.genre_id
-            WHERE s.title LIKE %s OR a.name LIKE %s OR al.title LIKE %s
-            ORDER BY s.title
-            """
-            cursor.execute(query, (search_param, search_param, search_param))
-        
-        songs = cursor.fetchall()
-        
-        # Format durations to MM:SS
-        for song in songs:
-            minutes, seconds = divmod(song['duration'] or 0, 60)  # Handle None values
-            song['duration_formatted'] = f"{minutes}:{seconds:02d}"
-        
-        return songs
-        
-    except mysql.connector.Error as e:
-        print(f"Error searching songs: {e}")
-        return []
-    finally:
-        if 'connection' in locals() and connection and connection.is_connected():
-            cursor.close()
-            connection.close()
-
-def get_recent_songs(limit=6):
-    """Get recently added songs"""
+def get_featured_songs(limit=3):
+    """Get featured songs from the database"""
     try:
         connection = connect_db()
         if not connection:
@@ -167,21 +85,36 @@ def get_recent_songs(limit=6):
             
         cursor = connection.cursor(dictionary=True)
         
+        # Get songs with most plays in listening history
         query = """
-        SELECT s.song_id, s.title, a.name as artist_name 
+        SELECT s.song_id, s.title, a.name as artist_name, COUNT(lh.history_id) as play_count 
         FROM Songs s
         JOIN Artists a ON s.artist_id = a.artist_id
-        ORDER BY s.upload_date DESC
+        LEFT JOIN Listening_History lh ON s.song_id = lh.song_id
+        GROUP BY s.song_id
+        ORDER BY play_count DESC
         LIMIT %s
         """
         
         cursor.execute(query, (limit,))
         songs = cursor.fetchall()
         
+        # If no songs with play history, get newest songs
+        if not songs:
+            query = """
+            SELECT s.song_id, s.title, a.name as artist_name 
+            FROM Songs s
+            JOIN Artists a ON s.artist_id = a.artist_id
+            ORDER BY s.upload_date DESC
+            LIMIT %s
+            """
+            cursor.execute(query, (limit,))
+            songs = cursor.fetchall()
+            
         return songs
         
     except mysql.connector.Error as e:
-        print(f"Error fetching recent songs: {e}")
+        print(f"Error fetching featured songs: {e}")
         return []
     finally:
         if 'connection' in locals() and connection and connection.is_connected():
@@ -189,7 +122,7 @@ def get_recent_songs(limit=6):
             connection.close()
 
 def get_song_data(song_id):
-    """Get binary song data from database"""
+    """Get binary song data from the database"""
     try:
         connection = connect_db()
         if not connection:
@@ -206,7 +139,35 @@ def get_song_data(song_id):
         return None
         
     except mysql.connector.Error as e:
-        print(f"Error getting song data: {e}")
+        print(f"Error fetching song data: {e}")
+        return None
+    finally:
+        if 'connection' in locals() and connection and connection.is_connected():
+            cursor.close()
+            connection.close()
+
+def get_song_info(song_id):
+    """Get song information from the database"""
+    try:
+        connection = connect_db()
+        if not connection:
+            return None
+            
+        cursor = connection.cursor(dictionary=True)
+        
+        query = """
+        SELECT s.title, a.name as artist_name, s.duration, g.name as genre
+        FROM Songs s
+        JOIN Artists a ON s.artist_id = a.artist_id
+        LEFT JOIN Genres g ON s.genre_id = g.genre_id
+        WHERE s.song_id = %s
+        """
+        
+        cursor.execute(query, (song_id,))
+        return cursor.fetchone()
+        
+    except mysql.connector.Error as e:
+        print(f"Error fetching song info: {e}")
         return None
     finally:
         if 'connection' in locals() and connection and connection.is_connected():
@@ -249,19 +210,11 @@ def play_song(song_id):
             messagebox.showerror("Error", "Could not retrieve song data")
             return False
             
-        # Get additional song info for display
-        connection = connect_db()
-        if connection:
-            cursor = connection.cursor(dictionary=True)
-            cursor.execute(
-                "SELECT s.title, a.name as artist_name FROM Songs s JOIN Artists a ON s.artist_id = a.artist_id WHERE s.song_id = %s",
-                (song_id,)
-            )
-            song_info = cursor.fetchone()
-            cursor.close()
-            connection.close()
-        else:
-            song_info = {"title": "Unknown", "artist_name": "Unknown"}
+        # Get song info
+        song_info = get_song_info(song_id)
+        if not song_info:
+            messagebox.showerror("Error", "Could not retrieve song information")
+            return False
             
         # Create a temporary file to play the song
         temp_dir = "temp"
@@ -280,18 +233,15 @@ def play_song(song_id):
         # Update current song info
         current_song = {
             "id": song_id,
-            "title": song_info["title"],
-            "artist": song_info["artist_name"],
+            "title": song_info['title'],
+            "artist": song_info['artist_name'],
             "playing": True,
             "paused": False
         }
         
         # Update UI elements
-        if 'now_playing_label' in globals():
-            now_playing_label.configure(text=f"Now Playing: {current_song['title']} - {current_song['artist']}")
-        
-        if 'play_btn' in globals():
-            play_btn.configure(text="⏸️")
+        now_playing_label.configure(text=f"Now Playing: {current_song['title']} - {current_song['artist']}")
+        play_btn.configure(text="⏸️")
         
         # Record in listening history
         record_listening_history(song_id)
@@ -308,8 +258,10 @@ def toggle_play_pause():
     global current_song
     
     if current_song["id"] is None:
-        # No song loaded - do nothing
-        return
+        # No song is loaded, try to play first featured song
+        featured_songs = get_featured_songs(1)
+        if featured_songs:
+            play_song(featured_songs[0]['song_id'])
     elif current_song["paused"]:
         # Resume paused song
         mixer.music.unpause()
@@ -324,21 +276,23 @@ def toggle_play_pause():
         play_btn.configure(text="▶️")
 
 def play_next_song():
-    """Placeholder for playing next song"""
+    """Play the next song in the playlist"""
+    # This is a placeholder that would be implemented with your playlist functionality
     messagebox.showinfo("Info", "Next song feature will be implemented with playlists")
 
 def play_previous_song():
-    """Placeholder for playing previous song"""
+    """Play the previous song in the playlist"""
+    # This is a placeholder that would be implemented with your playlist functionality
     messagebox.showinfo("Info", "Previous song feature will be implemented with playlists")
 
 # ------------------- Navigation Functions -------------------
-def open_home_page():
-    """Open the home page"""
+def open_search_page():
+    """Open the search page"""
     try:
-        subprocess.Popen(["python", "home.py"])
+        subprocess.Popen(["python", "search.py"])
         root.destroy()
     except Exception as e:
-        messagebox.showerror("Error", f"Unable to open home page: {e}")
+        messagebox.showerror("Error", f"Unable to open search page: {e}")
 
 def open_playlist_page():
     """Open the playlist page"""
@@ -380,94 +334,35 @@ def open_login_page():
     except Exception as e:
         messagebox.showerror("Error", f"Unable to logout: {e}")
 
-def perform_search(event=None):
-    """Search for songs and update the search results"""
-    # Clear previous search results
-    for widget in songs_section.winfo_children():
-        if widget != songs_title:  # Keep the section title
-            widget.destroy()
+def create_song_card(parent, song_id, title, artist):
+    """Create a clickable song card"""
+    # Create song card frame
+    song_card = ctk.CTkFrame(parent, fg_color="#1A1A2E", corner_radius=10, 
+                           width=150, height=180)
+    song_card.pack_propagate(False)
     
-    # Get search query
-    query = search_entry.get()
+    # Center the text vertically by adding a spacer frame
+    spacer = ctk.CTkFrame(song_card, fg_color="#1A1A2E", height=30)
+    spacer.pack(side="top")
     
-    if not query:
-        # If no query, just show recent songs
-        display_songs(get_recent_songs(), "Recent Songs")
-        return
+    # Song title with larger font
+    song_label = ctk.CTkLabel(song_card, text=title, 
+                             font=("Arial", 16, "bold"), text_color="white")
+    song_label.pack(pady=(5, 0))
     
-    # Perform the search
-    search_results = search_songs(query)
+    # Artist name below with smaller font
+    artist_label = ctk.CTkLabel(song_card, text=artist, 
+                               font=("Arial", 12), text_color="#A0A0A0")
+    artist_label.pack(pady=(5, 0))
     
-    # Display results
-    if search_results:
-        display_songs(search_results, f"Search Results for '{query}'")
-    else:
-        no_results_label = ctk.CTkLabel(
-            songs_section, 
-            text=f"No songs found for '{query}'", 
-            font=("Arial", 14),
-            text_color="#A0A0A0"
-        )
-        no_results_label.pack(pady=20)
-
-def display_songs(songs, section_subtitle=None):
-    """Display songs in the search results section"""
-    # Update section subtitle if provided
-    if section_subtitle:
-        songs_title.configure(text=f"🔍 {section_subtitle}")
+    # Play button
+    play_song_btn = ctk.CTkButton(song_card, text="▶️ Play", 
+                                font=("Arial", 12, "bold"),
+                                fg_color="#B146EC", hover_color="#9333EA",
+                                command=lambda: play_song(song_id))
+    play_song_btn.pack(pady=(15, 0))
     
-    if not songs:
-        no_songs_label = ctk.CTkLabel(
-            songs_section, 
-            text="No songs available", 
-            font=("Arial", 14),
-            text_color="#A0A0A0"
-        )
-        no_songs_label.pack(pady=20)
-        return
-    
-    # Create song rows
-    for song in songs:
-        # Create a frame for each song row
-        song_frame = ctk.CTkFrame(songs_section, fg_color="#1A1A2E", corner_radius=10, height=50)
-        song_frame.pack(fill="x", pady=5)
-        
-        # Format the song display text
-        if "album_name" in song and song["album_name"]:
-            display_text = f"🎵 {song['artist_name']} - {song['title']} ({song['album_name']})"
-        else:
-            display_text = f"🎵 {song['artist_name']} - {song['title']}"
-        
-        # Add duration if available
-        if "duration_formatted" in song:
-            display_text += f" ({song['duration_formatted']})"
-        
-        # Song name and info
-        song_label = ctk.CTkLabel(
-            song_frame, 
-            text=display_text, 
-            font=("Arial", 14), 
-            text_color="white",
-            anchor="w"
-        )
-        song_label.pack(side="left", padx=15, fill="y")
-        
-        # Play button
-        play_icon = ctk.CTkLabel(
-            song_frame, 
-            text="▶️", 
-            font=("Arial", 16), 
-            text_color="#22C55E"
-        )
-        play_icon.pack(side="right", padx=15)
-        
-        # Add play song command
-        song_id = song["song_id"]
-        
-        # Make the whole row clickable
-        song_frame.bind("<Button-1>", lambda e, sid=song_id: play_song(sid))
-        song_label.bind("<Button-1>", lambda e, sid=song_id: play_song(sid))
-        play_icon.bind("<Button-1>", lambda e, sid=song_id: play_song(sid))
+    return song_card
 
 # ------------------- Initialize App -------------------
 try:
@@ -483,7 +378,7 @@ try:
     ctk.set_default_color_theme("blue")  # Default theme
 
     root = ctk.CTk()
-    root.title("Online Music System - Search Songs")
+    root.title("Online Music System - Home")
     root.geometry("1000x600")  # Adjusted to match the image proportions
     root.resizable(False, False)
 
@@ -499,15 +394,15 @@ try:
     title_label = ctk.CTkLabel(sidebar, text="Online Music\nSystem", font=("Arial", 20, "bold"), text_color="white")
     title_label.pack(pady=(25, 30))
 
-    # Sidebar Menu Items with navigation commands
+    # Sidebar Menu Items - Updated with navigation commands
     home_btn = ctk.CTkButton(sidebar, text="🏠 Home", font=("Arial", 14), 
-                          fg_color="#111827", hover_color="#1E293B", text_color="#A0A0A0",
-                          anchor="w", corner_radius=0, height=40, command=open_home_page)
+                          fg_color="#111827", hover_color="#1E293B", text_color="white",
+                          anchor="w", corner_radius=0, height=40)
     home_btn.pack(fill="x", pady=5, padx=10)
 
     search_btn = ctk.CTkButton(sidebar, text="🔍 Search", font=("Arial", 14), 
-                            fg_color="#111827", hover_color="#1E293B", text_color="white",
-                            anchor="w", corner_radius=0, height=40)
+                            fg_color="#111827", hover_color="#1E293B", text_color="#A0A0A0",
+                            anchor="w", corner_radius=0, height=40, command=open_search_page)
     search_btn.pack(fill="x", pady=5, padx=10)
 
     playlist_btn = ctk.CTkButton(sidebar, text="🎵 Playlist", font=("Arial", 14), 
@@ -552,13 +447,13 @@ try:
     prev_btn.pack(side="left", padx=10)
 
     play_btn = ctk.CTkButton(player_frame, text="▶️", font=("Arial", 18), 
-                           fg_color="#111827", hover_color="#1E293B", 
-                           width=40, height=40, command=toggle_play_pause)
+                            fg_color="#111827", hover_color="#1E293B", 
+                            width=40, height=40, command=toggle_play_pause)
     play_btn.pack(side="left", padx=10)
 
     next_btn = ctk.CTkButton(player_frame, text="⏭️", font=("Arial", 18), 
-                           fg_color="#111827", hover_color="#1E293B", 
-                           width=40, height=40, command=play_next_song)
+                            fg_color="#111827", hover_color="#1E293B", 
+                            width=40, height=40, command=play_next_song)
     next_btn.pack(side="left", padx=10)
 
     # ---------------- Main Content ----------------
@@ -569,110 +464,95 @@ try:
     header_frame = ctk.CTkFrame(content_frame, fg_color="#131B2E", height=40)
     header_frame.pack(fill="x", padx=20, pady=(20, 0))
 
-    # Left side: Search Songs
-    search_label = ctk.CTkLabel(header_frame, text="Search Songs", font=("Arial", 24, "bold"), text_color="white")
-    search_label.pack(side="left")
+    # Left side: Home
+    home_label = ctk.CTkLabel(header_frame, text="Home", font=("Arial", 18, "bold"), text_color="white")
+    home_label.pack(side="left")
 
     # Right side: Username - updated with actual user name
     user_label = ctk.CTkLabel(header_frame, 
-                           text=f"Hello, {user['first_name']} {user['last_name']}!", 
-                           font=("Arial", 14), text_color="#A0A0A0")
+                            text=f"Hello, {user['first_name']} {user['last_name']}!", 
+                            font=("Arial", 14), text_color="#A0A0A0")
     user_label.pack(side="right")
 
-    # ---------------- Search Bar ----------------
-    search_frame = ctk.CTkFrame(content_frame, fg_color="#131B2E")
-    search_frame.pack(fill="x", padx=20, pady=(30, 20))
+    # ---------------- Hero Section ----------------
+    hero_frame = ctk.CTkFrame(content_frame, fg_color="#131B2E")
+    hero_frame.pack(fill="x", padx=20, pady=(40, 20))
 
-    # Search type selection
-    search_type_frame = ctk.CTkFrame(search_frame, fg_color="#131B2E")
-    search_type_frame.pack(fill="x", pady=(0, 10))
-    
-    search_type_var = ctk.StringVar(value="all")
-    
-    # Search type options
-    search_all_radio = ctk.CTkRadioButton(
-        search_type_frame, 
-        text="All", 
-        variable=search_type_var, 
-        value="all",
-        fg_color="#B146EC",
-        text_color="#A0A0A0"
-    )
-    search_all_radio.pack(side="left", padx=(0, 20))
-    
-    search_songs_radio = ctk.CTkRadioButton(
-        search_type_frame, 
-        text="Songs", 
-        variable=search_type_var, 
-        value="song",
-        fg_color="#B146EC",
-        text_color="#A0A0A0"
-    )
-    search_songs_radio.pack(side="left", padx=(0, 20))
-    
-    search_artists_radio = ctk.CTkRadioButton(
-        search_type_frame, 
-        text="Artists", 
-        variable=search_type_var, 
-        value="artist",
-        fg_color="#B146EC",
-        text_color="#A0A0A0"
-    )
-    search_artists_radio.pack(side="left", padx=(0, 20))
-    
-    search_albums_radio = ctk.CTkRadioButton(
-        search_type_frame, 
-        text="Albums", 
-        variable=search_type_var, 
-        value="album",
-        fg_color="#B146EC",
-        text_color="#A0A0A0"
-    )
-    search_albums_radio.pack(side="left")
+    # Main title
+    title_label = ctk.CTkLabel(hero_frame, text="Discover Music & Play Instantly", 
+                              font=("Arial", 28, "bold"), text_color="#B146EC")
+    title_label.pack(anchor="w")
 
-    # Search entry with rounded corners
-    search_entry = ctk.CTkEntry(search_frame, 
-                              placeholder_text="Search for songs, artists, or albums...",
-                              font=("Arial", 14), text_color="#FFFFFF",
-                              fg_color="#1A1A2E", border_color="#2A2A4E", 
-                              height=45, corner_radius=10)
-    search_entry.pack(side="left", fill="x", expand=True)
-    
-    # Bind Enter key to search
-    search_entry.bind("<Return>", perform_search)
-    
-    # Search button
-    search_button = ctk.CTkButton(
-        search_frame, 
-        text="Search", 
-        font=("Arial", 14, "bold"),
-        fg_color="#B146EC", 
-        hover_color="#9333EA", 
-        corner_radius=10,
-        command=perform_search,
-        height=45,
-        width=100
-    )
-    search_button.pack(side="right", padx=(10, 0))
+    # Subtitle
+    subtitle_label = ctk.CTkLabel(hero_frame, 
+                                 text="Explore top trending songs, curated playlists, and personalized recommendations.", 
+                                 font=("Arial", 14), text_color="#A0A0A0")
+    subtitle_label.pack(anchor="w", pady=(10, 20))
 
-    # ---------------- Songs Section ----------------
-    songs_section = ctk.CTkFrame(content_frame, fg_color="#131B2E")
-    songs_section.pack(fill="both", expand=True, padx=20, pady=10)
+    # Action Buttons with navigation
+    button_frame = ctk.CTkFrame(hero_frame, fg_color="#131B2E")
+    button_frame.pack(anchor="w")
+
+    # Trending button (just scrolls to featured songs for now)
+    trending_btn = ctk.CTkButton(button_frame, text="🔥 Trending", font=("Arial", 14, "bold"), 
+                                fg_color="#2563EB", hover_color="#1D4ED8", 
+                                corner_radius=8, height=40, width=150)
+    trending_btn.pack(side="left", padx=(0, 10))
+
+    # Playlists button
+    playlists_btn = ctk.CTkButton(button_frame, text="🎵 Playlists", font=("Arial", 14, "bold"), 
+                                 fg_color="#16A34A", hover_color="#15803D", 
+                                 corner_radius=8, height=40, width=150,
+                                 command=open_playlist_page)
+    playlists_btn.pack(side="left", padx=10)
+
+    # Download button
+    download_btn = ctk.CTkButton(button_frame, text="⬇️ Download", font=("Arial", 14, "bold"), 
+                                fg_color="#B146EC", hover_color="#9333EA", 
+                                corner_radius=8, height=40, width=150,
+                                command=open_download_page)
+    download_btn.pack(side="left", padx=10)
+
+    # ---------------- Featured Songs Section ----------------
+    featured_frame = ctk.CTkFrame(content_frame, fg_color="#131B2E")
+    featured_frame.pack(fill="x", padx=20, pady=20)
 
     # Section title
-    songs_title = ctk.CTkLabel(songs_section, text="Recent Songs 🎵", 
-                             font=("Arial", 20, "bold"), text_color="#B146EC")
-    songs_title.pack(anchor="w", pady=(0, 15))
+    featured_title = ctk.CTkLabel(featured_frame, text="🔥 Featured Songs", 
+                                 font=("Arial", 18, "bold"), text_color="#B146EC")
+    featured_title.pack(anchor="w", pady=(0, 20))
 
-    # Show recent songs on initial load
-    display_songs(get_recent_songs(), "Recent Songs")
+    # Song cards container
+    songs_frame = ctk.CTkFrame(featured_frame, fg_color="#131B2E")
+    songs_frame.pack(fill="x")
+
+    # Get featured songs from database
+    featured_songs = get_featured_songs(3)
+    
+    # If database has no songs yet, use sample data
+    if not featured_songs:
+        featured_songs = [
+            {"song_id": 1, "title": "Blinding\nLights", "artist_name": "The\nWeeknd"},
+            {"song_id": 2, "title": "Levitating", "artist_name": "Dua Lipa"},
+            {"song_id": 3, "title": "Shape of\nYou", "artist_name": "Ed\nSheeran"}
+        ]
+    
+    # Create song cards for each featured song
+    for song in featured_songs:
+        song_card = create_song_card(
+            songs_frame, 
+            song["song_id"], 
+            song["title"], 
+            song["artist_name"]
+        )
+        song_card.pack(side="left", padx=10)
 
     # ---------------- Run Application ----------------
     root.mainloop()
     
 except Exception as e:
     import traceback
-    print(f"Error in search.py: {e}")
+    print(f"Error in home.py: {e}")
     traceback.print_exc()
     messagebox.showerror("Error", f"An error occurred: {e}")
     input("Press Enter to exit...")  # This keeps console open

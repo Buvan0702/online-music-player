@@ -1,44 +1,20 @@
-import mysql.connector
+"""
+Main entry point for the Online Music System.
+Handles initial setup, database creation, and launches the application.
+"""
+
 import os
-import subprocess
-import tkinter as tk
-from tkinter import messagebox
-import customtkinter as ctk
-import hashlib
-import random
 import time
-import shutil
-import io
-from PIL import Image
+import random
+import mysql.connector
+import customtkinter as ctk
+from tkinter import messagebox
+import subprocess
+
+from config import UI_THEME, UI_COLOR_THEME, COLORS, TEMP_DIR
+from utils import connect_db, connect_db_server, hash_password, create_temp_directory
 
 # ------------------- Database Setup Functions -------------------
-def connect_db_server():
-    """Connect to MySQL server without specifying a database"""
-    try:
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="new_password"
-        )
-        return connection
-    except mysql.connector.Error as err:
-        print(f"Error connecting to MySQL server: {err}")
-        return None
-
-def connect_db():
-    """Connect to the specific database"""
-    try:
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="new_password",
-            database="online_music_system"
-        )
-        return connection
-    except mysql.connector.Error as err:
-        print(f"Error connecting to database: {err}")
-        return None
-
 def create_database():
     """Create the database and tables"""
     try:
@@ -184,10 +160,6 @@ def create_database():
     except mysql.connector.Error as err:
         print(f"Error creating database: {err}")
         return False
-
-def hash_password(password):
-    """Hash a password using SHA-256"""
-    return hashlib.sha256(password.encode()).hexdigest()
 
 def add_default_users():
     """Add default users including admin"""
@@ -389,6 +361,50 @@ def add_default_albums():
         print(f"Error adding default albums: {err}")
         return False
 
+def create_dummy_audio():
+    """Create a dummy WAV file data for placeholder"""
+    # This creates a very simple WAV file with 1 second of silence
+    # Complete WAV header and minimal data
+    wav_header = bytearray([
+        # RIFF header
+        0x52, 0x49, 0x46, 0x46,  # "RIFF"
+        0x24, 0x00, 0x00, 0x00,  # Chunk size (36 + data size)
+        0x57, 0x41, 0x56, 0x45,  # "WAVE"
+        
+        # Format subchunk
+        0x66, 0x6d, 0x74, 0x20,  # "fmt "
+        0x10, 0x00, 0x00, 0x00,  # Subchunk size (16 bytes)
+        0x01, 0x00,              # Audio format (1 = PCM)
+        0x01, 0x00,              # Number of channels (1)
+        0x44, 0xac, 0x00, 0x00,  # Sample rate (44100 Hz)
+        0x44, 0xac, 0x00, 0x00,  # Byte rate (44100 * 1 * 1)
+        0x01, 0x00,              # Block align (1)
+        0x08, 0x00,              # Bits per sample (8)
+        
+        # Data subchunk
+        0x64, 0x61, 0x74, 0x61,  # "data"
+        0x00, 0x00, 0x00, 0x00   # Data size (filled in below)
+    ])
+    
+    # Generate 1 second of silence at 44.1kHz
+    silence_duration = 1  # seconds
+    sample_rate = 44100
+    num_samples = silence_duration * sample_rate
+    silent_data = bytearray([128] * num_samples)  # 128 = silence for 8-bit PCM
+    
+    # Update data size
+    data_size = len(silent_data)
+    wav_header[40:44] = data_size.to_bytes(4, byteorder='little')
+    
+    # Update RIFF chunk size
+    riff_chunk_size = 36 + data_size
+    wav_header[4:8] = riff_chunk_size.to_bytes(4, byteorder='little')
+    
+    # Combine header and data
+    wav_data = wav_header + silent_data
+    
+    return wav_data
+
 def add_dummy_songs():
     """Add dummy/placeholder songs"""
     try:
@@ -473,50 +489,6 @@ def add_dummy_songs():
         print(f"Error adding dummy songs: {err}")
         return False
 
-def create_dummy_audio():
-    """Create a dummy WAV file data for placeholder"""
-    # This creates a very simple WAV file with 1 second of silence
-    # Complete WAV header and minimal data
-    wav_header = bytearray([
-        # RIFF header
-        0x52, 0x49, 0x46, 0x46,  # "RIFF"
-        0x24, 0x00, 0x00, 0x00,  # Chunk size (36 + data size)
-        0x57, 0x41, 0x56, 0x45,  # "WAVE"
-        
-        # Format subchunk
-        0x66, 0x6d, 0x74, 0x20,  # "fmt "
-        0x10, 0x00, 0x00, 0x00,  # Subchunk size (16 bytes)
-        0x01, 0x00,              # Audio format (1 = PCM)
-        0x01, 0x00,              # Number of channels (1)
-        0x44, 0xac, 0x00, 0x00,  # Sample rate (44100 Hz)
-        0x44, 0xac, 0x00, 0x00,  # Byte rate (44100 * 1 * 1)
-        0x01, 0x00,              # Block align (1)
-        0x08, 0x00,              # Bits per sample (8)
-        
-        # Data subchunk
-        0x64, 0x61, 0x74, 0x61,  # "data"
-        0x00, 0x00, 0x00, 0x00   # Data size (filled in below)
-    ])
-    
-    # Generate 1 second of silence at 44.1kHz
-    silence_duration = 1  # seconds
-    sample_rate = 44100
-    num_samples = silence_duration * sample_rate
-    silent_data = bytearray([128] * num_samples)  # 128 = silence for 8-bit PCM
-    
-    # Update data size
-    data_size = len(silent_data)
-    wav_header[40:44] = data_size.to_bytes(4, byteorder='little')
-    
-    # Update RIFF chunk size
-    riff_chunk_size = 36 + data_size
-    wav_header[4:8] = riff_chunk_size.to_bytes(4, byteorder='little')
-    
-    # Combine header and data
-    wav_data = wav_header + silent_data
-    
-    return wav_data
-
 def add_default_playlists():
     """Add default playlists"""
     try:
@@ -540,11 +512,11 @@ def add_default_playlists():
         cursor.execute("SELECT user_id FROM Users")
         user_ids = [row[0] for row in cursor.fetchall()]
         
-        # Create system playlists (user_id 0)
+        # Create system playlists (user_id 1 - admin)
         system_playlists = [
-            (0, "Top Hits", "Most popular songs right now"),
-            (0, "Chill Vibes", "Relaxing music for your downtime"),
-            (0, "Workout Mix", "Energetic tracks to keep you moving")
+            (1, "Top Hits", "Most popular songs right now"),
+            (1, "Chill Vibes", "Relaxing music for your downtime"),
+            (1, "Workout Mix", "Energetic tracks to keep you moving")
         ]
         
         # Insert system playlists
@@ -558,7 +530,7 @@ def add_default_playlists():
         # Create user playlists (one for each user)
         user_playlists = []
         for user_id in user_ids:
-            if user_id > 0:  # Skip admin user
+            if user_id > 1:  # Skip admin user
                 user_playlists.append((user_id, f"My Favorites", "My favorite songs"))
                 user_playlists.append((user_id, f"Road Trip", "Perfect for long drives"))
         
@@ -673,17 +645,6 @@ def add_sample_listening_history():
         print(f"Error adding sample listening history: {err}")
         return False
 
-def create_temp_directory():
-    """Create a temp directory for storing temporary files"""
-    try:
-        if not os.path.exists("temp"):
-            os.makedirs("temp")
-            print("Created temp directory for temporary files.")
-        return True
-    except Exception as e:
-        print(f"Error creating temp directory: {e}")
-        return False
-
 # ------------------- Splash Screen -------------------
 def show_splash_screen():
     """Display a splash screen while setting up the database"""
@@ -701,7 +662,7 @@ def show_splash_screen():
     splash_root.geometry(f"400x300+{x}+{y}")
     
     # Create a frame with rounded corners and purple color
-    splash_frame = ctk.CTkFrame(splash_root, corner_radius=20, fg_color="#B146EC")
+    splash_frame = ctk.CTkFrame(splash_root, corner_radius=20, fg_color=COLORS["primary"])
     splash_frame.pack(fill="both", expand=True, padx=0, pady=0)
     
     # App title
@@ -804,17 +765,6 @@ def show_splash_screen():
         splash_root.destroy()
         launch_application()
     
-    # Add a small admin login link at the bottom
-    admin_link = ctk.CTkLabel(
-        splash_frame,
-        text="Admin Login",
-        font=("Arial", 10),
-        text_color="white",
-        cursor="hand2"
-    )
-    admin_link.pack(side="bottom", pady=5)
-    admin_link.bind("<Button-1>", lambda e: [splash_root.destroy(), launch_admin_login()])
-    
     # Start setup after a short delay
     splash_root.after(500, run_setup)
     
@@ -833,33 +783,17 @@ def launch_application():
             os.remove("current_admin.txt")
         
         # Start the login page
-        subprocess.Popen(["python", "login.py"])
+        subprocess.Popen(["python", "login_signup.py"])
     except Exception as e:
         print(f"Error launching application: {e}")
         messagebox.showerror("Error", f"Failed to launch application: {e}")
-
-def launch_admin_login():
-    """Launch the admin login page"""
-    try:
-        # Clear any existing user session
-        if os.path.exists("current_user.txt"):
-            os.remove("current_user.txt")
-        
-        if os.path.exists("current_admin.txt"):
-            os.remove("current_admin.txt")
-        
-        # Start the admin login page
-        subprocess.Popen(["python", "admin_login.py"])
-    except Exception as e:
-        print(f"Error launching admin login: {e}")
-        messagebox.showerror("Error", f"Failed to launch admin login: {e}")
 
 # ------------------- Main Entry Point -------------------
 if __name__ == "__main__":
     try:
         # Set the appearance mode for splash screen
-        ctk.set_appearance_mode("dark")
-        ctk.set_default_color_theme("blue")
+        ctk.set_appearance_mode(UI_THEME)
+        ctk.set_default_color_theme(UI_COLOR_THEME)
         
         # Show splash screen and setup database
         show_splash_screen()
